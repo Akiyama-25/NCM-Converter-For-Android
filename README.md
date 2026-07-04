@@ -1,3 +1,5 @@
+[English](https://github.com/Akiyama-25/NCM-Converter-For-Android/blob/main/README_EN.md)
+
 # NCM 转换器
 
 一款 Android 工具，用于将网易云音乐加密的 `.ncm` 文件解密还原为标准 MP3/FLAC 音频文件。

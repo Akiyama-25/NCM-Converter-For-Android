@@ -27,7 +27,9 @@ object AppPrefs {
     private const val KEY_CUSTOM_BG_H = "custom_bg_h"
     private const val KEY_CUSTOM_BG_S = "custom_bg_s"
     private const val KEY_CUSTOM_BG_L = "custom_bg_l"
-
+    private const val KEY_GRID_COLUMNS = "grid_columns"
+    private const val KEY_PORTRAIT_GRID_ENABLED = "portrait_grid_enabled"
+    private const val KEY_APP_LANGUAGE = "app_language"
     const val THEME_SYSTEM = "system"
     const val THEME_LIGHT = "light"
     const val THEME_DARK = "dark"
@@ -75,6 +77,12 @@ object AppPrefs {
     private val _bgLFlow = MutableStateFlow(98f)
     val bgLFlow: StateFlow<Float> = _bgLFlow.asStateFlow()
 
+    private val _gridColumnsFlow = MutableStateFlow(2)
+    val gridColumnsFlow: StateFlow<Int> = _gridColumnsFlow.asStateFlow()
+
+    private val _portraitGridEnabledFlow = MutableStateFlow(false)
+    val portraitGridEnabledFlow: StateFlow<Boolean> = _portraitGridEnabledFlow.asStateFlow()
+
     fun init(context: Context) {
         prefs = context.getSharedPreferences(NAME, Context.MODE_PRIVATE)
         _themeFlow.value = themeMode // sync initial state
@@ -88,6 +96,8 @@ object AppPrefs {
         _bgHFlow.value = customBgH
         _bgSFlow.value = customBgS
         _bgLFlow.value = customBgL
+        _gridColumnsFlow.value = gridColumns
+        _portraitGridEnabledFlow.value = portraitGridEnabled
     }
 
     var themeMode: String
@@ -194,6 +204,24 @@ object AppPrefs {
             prefs.edit().putFloat(KEY_CUSTOM_BG_L, value).apply()
             _bgLFlow.value = value
         }
+
+    var gridColumns: Int
+        get() = prefs.getInt(KEY_GRID_COLUMNS, 2)
+        set(value) {
+            prefs.edit().putInt(KEY_GRID_COLUMNS, value.coerceIn(1, 5)).apply()
+            _gridColumnsFlow.value = value.coerceIn(1, 5)
+        }
+
+    var portraitGridEnabled: Boolean
+        get() = prefs.getBoolean(KEY_PORTRAIT_GRID_ENABLED, false)
+        set(value) {
+            prefs.edit().putBoolean(KEY_PORTRAIT_GRID_ENABLED, value).apply()
+            _portraitGridEnabledFlow.value = value
+        }
+
+    var appLanguage: String
+        get() = prefs.getString(KEY_APP_LANGUAGE, "system") ?: "system"
+        set(value) = prefs.edit().putString(KEY_APP_LANGUAGE, value).apply()
 
     fun updateAccentColor(argb: Long, h: Float, s: Float, l: Float) {
         prefs.edit()

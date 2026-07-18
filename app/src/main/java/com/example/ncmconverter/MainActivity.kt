@@ -4,10 +4,15 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
 import android.widget.Toast
-import androidx.activity.ComponentActivity
+import androidx.activity.enableEdgeToEdge
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.app.AppCompatDelegate
 import androidx.compose.runtime.LaunchedEffect
+import androidx.core.os.LocaleListCompat
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.lifecycleScope
 import com.example.ncmconverter.decrypt.model.DecryptState
 import com.example.ncmconverter.metadata.FlacMetadataWriter
 import com.example.ncmconverter.metadata.Mp3MetadataWriter
@@ -19,7 +24,7 @@ import com.example.ncmconverter.util.AppPrefs
 import com.example.ncmconverter.util.FileUtils
 import kotlinx.coroutines.launch
 
-class MainActivity : ComponentActivity() {
+class MainActivity : AppCompatActivity() {
 
     private lateinit var viewModel: ConvertViewModel
 
@@ -55,7 +60,19 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         AppPrefs.init(this)
 
-        viewModel = ConvertViewModel()
+        // Apply saved language — always reset AppCompat locale to prevent stale overrides
+        try {
+            val lang = AppPrefs.appLanguage
+            val locales = if (lang == "system") LocaleListCompat.getEmptyLocaleList()
+                          else LocaleListCompat.forLanguageTags(lang)
+            AppCompatDelegate.setApplicationLocales(locales)
+        } catch (_: Exception) {
+            // Fallback: if locale setting fails, let system default take over
+        }
+
+        viewModel = ViewModelProvider(this)[ConvertViewModel::class.java]
+
+        enableEdgeToEdge()
 
         setContent {
             // Observe completed items for auto-save
@@ -77,6 +94,7 @@ class MainActivity : ComponentActivity() {
                         ?: throw IllegalArgumentException("无法打开文件") },
                     onOpenSettings = {
                         startActivity(Intent(this, SettingsActivity::class.java))
+                        overridePendingTransition(R.anim.slide_in_right, R.anim.slide_out_left)
                     }
                 )
             }
@@ -90,7 +108,7 @@ class MainActivity : ComponentActivity() {
         val mp3Writer = Mp3MetadataWriter()
         val flacWriter = FlacMetadataWriter()
 
-        kotlinx.coroutines.MainScope().launch {
+        lifecycleScope.launch {
             try {
                 val writer: suspend (ByteArray) -> ByteArray = when (result.extension) {
                     "flac" -> { bytes -> flacWriter.write(bytes, result.metadata, result.lyric) }

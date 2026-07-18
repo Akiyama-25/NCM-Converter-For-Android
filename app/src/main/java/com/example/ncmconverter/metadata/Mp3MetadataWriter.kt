@@ -2,11 +2,10 @@ package com.example.ncmconverter.metadata
 
 import com.example.ncmconverter.decrypt.model.NcmMetadata
 import com.example.ncmconverter.util.AppPrefs
+import com.example.ncmconverter.util.CoverFetcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.ByteArrayOutputStream
-import java.net.HttpURLConnection
-import java.net.URL
 
 class Mp3MetadataWriter : MetadataWriter {
 
@@ -29,7 +28,7 @@ class Mp3MetadataWriter : MetadataWriter {
             }
 
             // Fetch cover art if available and enabled
-            val coverBytes = if (AppPrefs.enableCover) fetchCoverArt(metadata.albumPic) else null
+            val coverBytes = if (AppPrefs.enableCover) CoverFetcher.fetch(metadata.albumPic) else null
 
             // Build ID3v2.3 tag
             val tag = buildId3v2Tag(metadata, coverBytes, lyric)
@@ -162,28 +161,4 @@ class Mp3MetadataWriter : MetadataWriter {
                 (buf[offset + 3].toInt() and 0x7f)
     }
 
-    private suspend fun fetchCoverArt(url: String): ByteArray? {
-        if (url.isBlank()) {
-            android.util.Log.d("CoverArt", "albumPic is blank, skip")
-            return null
-        }
-        return withContext(Dispatchers.IO) {
-            try {
-                android.util.Log.d("CoverArt", "Fetching cover: $url")
-                val connection = URL(url).openConnection() as HttpURLConnection
-                connection.connectTimeout = 8000
-                connection.readTimeout = 8000
-                connection.connect()
-                android.util.Log.d("CoverArt", "Response: ${connection.responseCode}")
-                if (connection.responseCode == HttpURLConnection.HTTP_OK) {
-                    val bytes = connection.inputStream.use { it.readBytes() }
-                    android.util.Log.d("CoverArt", "Cover downloaded: ${bytes.size} bytes")
-                    bytes
-                } else null
-            } catch (e: Exception) {
-                android.util.Log.e("CoverArt", "Failed to fetch cover", e)
-                null
-            }
-        }
-    }
 }

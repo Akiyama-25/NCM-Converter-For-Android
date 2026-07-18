@@ -2,11 +2,10 @@ package com.example.ncmconverter.metadata
 
 import com.example.ncmconverter.decrypt.model.NcmMetadata
 import com.example.ncmconverter.util.AppPrefs
+import com.example.ncmconverter.util.CoverFetcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.ByteArrayOutputStream
-import java.net.HttpURLConnection
-import java.net.URL
 
 class FlacMetadataWriter : MetadataWriter {
 
@@ -27,7 +26,7 @@ class FlacMetadataWriter : MetadataWriter {
             val streaminfoEnd = 4 + 4 + blockSize // 4=fLaC + 4=header + blockSize
 
             // Fetch cover art if enabled
-            val coverBytes = if (AppPrefs.enableCover) fetchCoverArt(metadata.albumPic) else null
+            val coverBytes = if (AppPrefs.enableCover) CoverFetcher.fetch(metadata.albumPic) else null
 
             // Build Vorbis Comment block
             val vorbisComment = buildVorbisComment(metadata, lyric)
@@ -142,30 +141,5 @@ class FlacMetadataWriter : MetadataWriter {
         out.write((value shr 8) and 0xff)
         out.write((value shr 16) and 0xff)
         out.write((value shr 24) and 0xff)
-    }
-
-    suspend fun fetchCoverArt(url: String): ByteArray? {
-        if (url.isBlank()) {
-            android.util.Log.d("CoverArt", "FLAC albumPic is blank, skip")
-            return null
-        }
-        return withContext(Dispatchers.IO) {
-            try {
-                android.util.Log.d("CoverArt", "FLAC fetching cover: $url")
-                val connection = URL(url).openConnection() as HttpURLConnection
-                connection.connectTimeout = 8000
-                connection.readTimeout = 8000
-                connection.connect()
-                android.util.Log.d("CoverArt", "FLAC response: ${connection.responseCode}")
-                if (connection.responseCode == HttpURLConnection.HTTP_OK) {
-                    val bytes = connection.inputStream.use { it.readBytes() }
-                    android.util.Log.d("CoverArt", "FLAC cover downloaded: ${bytes.size} bytes")
-                    bytes
-                } else null
-            } catch (e: Exception) {
-                android.util.Log.e("CoverArt", "FLAC failed to fetch cover", e)
-                null
-            }
-        }
     }
 }

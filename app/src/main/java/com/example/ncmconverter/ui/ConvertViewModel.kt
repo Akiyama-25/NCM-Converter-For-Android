@@ -1,7 +1,10 @@
 package com.example.ncmconverter.ui
 
+import android.app.Application
 import android.net.Uri
 import android.util.Log
+import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.viewModelScope
 import com.example.ncmconverter.api.RetrofitClient
 import com.example.ncmconverter.decrypt.model.DecryptResult
 import com.example.ncmconverter.decrypt.model.DecryptState
@@ -9,9 +12,7 @@ import com.example.ncmconverter.decrypt.NcmDecryptor
 import com.example.ncmconverter.lyric.LrcParser
 import com.example.ncmconverter.lyric.LyricMatcher
 import com.example.ncmconverter.util.AppPrefs
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -33,8 +34,7 @@ data class FileItem(
     val error: String? = null
 )
 
-class ConvertViewModel {
-    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
+class ConvertViewModel(application: Application) : AndroidViewModel(application) {
 
     private val _files = MutableStateFlow<List<FileItem>>(emptyList())
     val files: StateFlow<List<FileItem>> = _files.asStateFlow()
@@ -84,7 +84,7 @@ class ConvertViewModel {
 
         _isProcessing.value = true
 
-        scope.launch {
+        viewModelScope.launch {
             for (file in pending) {
                 updateFileState(file.id, DecryptState.PARSING)
 
@@ -129,7 +129,7 @@ class ConvertViewModel {
         val file = _files.value.find { it.id == id } ?: return
         updateFileState(id, DecryptState.PARSING)
 
-        scope.launch {
+        viewModelScope.launch {
             try {
                 val decryptor = NcmDecryptor()
                 val result = if (file.size >= STREAMING_THRESHOLD) {

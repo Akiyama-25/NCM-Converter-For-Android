@@ -136,7 +136,7 @@ object FileUtils {
         val flacWriter = FlacMetadataWriter()
         val vorbisComment = flacWriter.buildVorbisComment(result.metadata, result.lyric)
 
-        val coverBytes = if (AppPrefs.enableCover) flacWriter.fetchCoverArt(result.metadata.albumPic) else null
+        val coverBytes = if (AppPrefs.enableCover) CoverFetcher.fetch(result.metadata.albumPic) else null
         val hasPicture = coverBytes != null && coverBytes.isNotEmpty()
         val pictureBlock = if (hasPicture) {
             val picture = flacWriter.buildPictureBlock(coverBytes!!)

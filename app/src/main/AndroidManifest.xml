@@ -25,11 +25,6 @@
         </activity>
 
         <activity
-            android:name=".InstructionsActivity"
-            android:exported="false"
-            android:theme="@style/Theme.NCMConverter" />
-
-        <activity
             android:name=".SettingsActivity"
             android:exported="false"
             android:theme="@style/Theme.NCMConverter" />

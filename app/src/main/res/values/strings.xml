@@ -1,4 +1,134 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">NCM 转换器</string>
+    <string name="app_name">NCM Converter</string>
+
+    <!-- HomeScreen -->
+    <string name="home_title">NCM Converter</string>
+    <string name="home_decrypting">Decrypting…</string>
+    <string name="home_pick_files">Select NCM Files</string>
+    <string name="home_no_ncm_selected">No .ncm file selected</string>
+    <string name="home_non_ncm_filtered">Non-.ncm files filtered out</string>
+    <string name="home_max_files">Maximum 50 files, first 50 kept</string>
+    <string name="home_empty_hint">Select .ncm files to start converting</string>
+    <string name="home_empty_desc">Supports NetEase Cloud Music NCM format\nOutputs MP3 or FLAC after decryption</string>
+    <string name="home_clear_list">Clear List</string>
+    <string name="home_convert_all">Convert All</string>
+    <string name="home_clear_dialog_title">Clear List</string>
+    <string name="home_clear_dialog_msg">Are you sure you want to clear all files?\n\nThis will remove all added files (including converted results) and free memory.</string>
+    <string name="home_clear_confirm">Clear</string>
+    <string name="home_cancel">Cancel</string>
+
+    <!-- FileItemView -->
+    <string name="file_wait">Waiting</string>
+    <string name="file_parsing">Parsing…</string>
+    <string name="file_decrypting">Decrypting… %1$d%%</string>
+    <string name="file_writing_meta">Writing tags…</string>
+    <string name="file_searching_lyric">Searching lyrics…</string>
+    <string name="file_completed">Done · %1$s</string>
+    <string name="file_no_lyric">Lyrics not found</string>
+    <string name="file_failed">Conversion failed</string>
+    <string name="file_action_decrypt">Decrypt</string>
+    <string name="file_action_save">Save</string>
+    <string name="file_action_remove">Remove</string>
+
+    <!-- MainActivity -->
+    <string name="main_saved_to">Saved to %1$s</string>
+    <string name="main_save_failed">Save failed</string>
+    <string name="main_save_failed_msg">Save failed: %1$s</string>
+    <string name="main_cannot_open">Unable to open file</string>
+
+    <!-- SettingsScreen -->
+    <string name="settings_title">Settings</string>
+    <string name="settings_back">Back</string>
+
+    <string name="section_display">Display</string>
+    <string name="section_convert">Conversion</string>
+    <string name="section_lyrics">Lyrics</string>
+    <string name="section_about">About</string>
+
+    <string name="pref_theme_mode">Theme</string>
+    <string name="pref_theme_system">System</string>
+    <string name="pref_theme_light">Light</string>
+    <string name="pref_theme_dark">Dark</string>
+
+    <string name="pref_grid_columns">List Columns</string>
+    <string name="pref_grid_columns_value">%1$d</string>
+    <string name="columns_dialog_msg">Setting list columns to 1 will disable multi-column layout. This page will reload.</string>
+    <string name="pref_portrait_grid">Multi-column in Portrait</string>
+    <string name="pref_portrait_grid_on">Use multi-column layout in portrait mode</string>
+    <string name="pref_portrait_grid_off">Use single column in portrait mode</string>
+
+    <string name="pref_monet">Dynamic Colors (Material You)</string>
+    <string name="pref_monet_on">Use wallpaper-based theme colors</string>
+    <string name="pref_monet_off">Use custom colors</string>
+
+    <string name="pref_accent_color">Accent Color</string>
+    <string name="pref_bg_color">Background Color</string>
+    <string name="pref_custom_hsl_accent">Custom Accent Color</string>
+    <string name="pref_custom_hsl_bg">Custom Background Color</string>
+    <string name="pref_hsl_hue">Hue</string>
+    <string name="pref_hsl_lightness">Lightness</string>
+    <string name="pref_hsl_saturation">Saturation</string>
+
+    <string name="pref_save_path">Save Path</string>
+    <string name="pref_manual_save">Manual Save</string>
+    <string name="pref_manual_save_on">Tap save button after conversion</string>
+    <string name="pref_manual_save_off">Auto-save after conversion</string>
+    <string name="pref_auto_cover">Auto Fetch Cover</string>
+    <string name="pref_auto_cover_on">Download cover art from network</string>
+    <string name="pref_auto_cover_off">No cover download (offline)</string>
+
+    <string name="pref_auto_lyric">Auto Embed Lyrics</string>
+    <string name="pref_auto_lyric_on">Automatically search and embed lyrics</string>
+    <string name="pref_auto_lyric_off">Do not fetch lyrics</string>
+    <string name="pref_lyric_mode">Lyric Mode</string>
+    <string name="pref_lyric_mode_merged">Merged</string>
+    <string name="pref_lyric_mode_raw">Original</string>
+    <string name="pref_lyric_mode_translated">Translated</string>
+    <string name="pref_lyric_mode_merged_desc">Merge original and translated lyrics line by line</string>
+    <string name="pref_lyric_mode_raw_desc">Show original lyrics only</string>
+    <string name="pref_lyric_mode_translated_desc">Show translated lyrics only</string>
+    <string name="pref_lyric_api">API URL *</string>
+    <string name="pref_lyric_api_hint">https://your-api-domain.com</string>
+    <string name="pref_lyric_api_support">Required. Deploy NeteaseCloudMusicApiEnhanced first\nRef: github.com/NeteaseCloudMusicApiEnhanced/api-enhanced</string>
+    <string name="pref_real_ip">Real IP</string>
+    <string name="pref_real_ip_hint">Optional, e.g. 36.149.92.99</string>
+    <string name="pref_real_ip_support">Leave empty to skip realIP parameter (required by some API deployments)</string>
+
+    <string name="pref_instructions">Instructions</string>
+    <string name="pref_instructions_desc">View app usage guide</string>
+    <string name="pref_github">NCM Converter for Android</string>
+    <string name="pref_github_url">github.com/Akiyama-25/NCM-Converter-For-Android</string>
+    <string name="instructions_title">Instructions</string>
+    <string name="instructions_load_failed">Failed to load instructions</string>
+    <string name="instructions_close">Close</string>
+
+    <!-- Color presets -->
+    <string name="color_green">Green</string>
+    <string name="color_blue">Blue</string>
+    <string name="color_purple">Purple</string>
+    <string name="color_red">Red</string>
+    <string name="color_orange">Orange</string>
+    <string name="color_cyan">Cyan</string>
+    <string name="color_pink">Pink</string>
+    <string name="color_indigo">Indigo</string>
+    <string name="color_white">White</string>
+    <string name="color_light_gray">Light Gray</string>
+    <string name="color_cream">Cream</string>
+    <string name="color_light_blue">Light Blue</string>
+    <string name="color_black">Black</string>
+    <string name="color_dark_gray">Dark Gray</string>
+    <string name="color_dark_blue">Dark Blue</string>
+    <string name="color_dark_purple">Dark Purple</string>
+
+    <!-- Language -->
+    <string name="pref_language">Language</string>
+    <string name="lang_system">System default</string>
+    <string name="lang_zh">简体中文</string>
+    <string name="lang_zh_tw">繁體中文</string>
+    <string name="lang_en">English</string>
+    <string name="lang_ja">日本語</string>
+
+    <!-- FileUtils -->
+    <string name="fileutils_open_failed">Unable to open file</string>
 </resources>

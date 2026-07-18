@@ -1,5 +1,7 @@
 [简体中文](https://github.com/Akiyama-25/NCM-Converter-For-Android/blob/main/README.md) | [繁體中文](https://github.com/Akiyama-25/NCM-Converter-For-Android/blob/main/README_TC.md) | [English](https://github.com/Akiyama-25/NCM-Converter-For-Android/blob/main/README_EN.md)
 
+この文書は「**Claude**」によって翻訳されました。
+
 # NCM コンバーター
 
 NetEase Cloud Music で暗号化された `.ncm` ファイルを標準的な MP3 または FLAC 形式に復号する Android アプリです。

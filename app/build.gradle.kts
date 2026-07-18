@@ -9,11 +9,11 @@ android {
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "Akari.Said.YuriBest.debug"
+        applicationId = "Akari.Said.YuriBest"
         minSdk = 26
         targetSdk = 35
         versionCode = 5
-        versionName = "debug-0.5"
+        versionName = "release-0.5"
     }
 
     buildTypes {

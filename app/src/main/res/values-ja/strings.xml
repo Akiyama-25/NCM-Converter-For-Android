@@ -70,10 +70,19 @@
     <string name="pref_hsl_lightness">明度</string>
     <string name="pref_hsl_saturation">彩度</string>
 
+    <!-- Font -->
+    <string name="pref_font">フォント</string>
+    <string name="font_system">システムデフォルト</string>
+    <string name="font_embedded">Resource Han Round</string>
+    <string name="font_weight">フォントウェイト</string>
+    <string name="lang_change_title">言語が変更されました</string>
+    <string name="lang_change_message">メインページに戻ると新しい言語が適用されます。</string>
+    <string name="lang_change_confirm">OK</string>
+
     <string name="pref_save_path">保存先パス</string>
-    <string name="pref_manual_save">手動保存</string>
-    <string name="pref_manual_save_on">変換後に保存ボタンをタップ</string>
-    <string name="pref_manual_save_off">変換後に自動保存</string>
+    <string name="pref_auto_save">自動保存</string>
+    <string name="pref_auto_save_on">変換後に自動保存し、バックグラウンド変換を有効化（通知バーに進捗表示）</string>
+    <string name="pref_auto_save_off">変換後に手動で保存ボタンをタップ、バックグラウンド変換なし</string>
     <string name="pref_auto_cover">カバー自動取得</string>
     <string name="pref_auto_cover_on">ネットワークからカバーアートをダウンロード</string>
     <string name="pref_auto_cover_off">カバーをダウンロードしない（オフライン）</string>
@@ -128,6 +137,15 @@
     <string name="lang_zh_tw">繁體中文</string>
     <string name="lang_en">English</string>
     <string name="lang_ja">日本語</string>
+
+    <!-- Back press -->
+    <string name="press_back_again">もう一度戻るを押して終了</string>
+
+    <!-- DecryptService notification -->
+    <string name="notif_channel_name">復号進捗</string>
+    <string name="notif_title">NCMファイルを復号中</string>
+    <string name="notif_text">バックグラウンドで変換中…</string>
+    <string name="notif_progress">%1$d / %2$d</string>
 
     <!-- FileUtils -->
     <string name="fileutils_open_failed">ファイルを開けません</string>

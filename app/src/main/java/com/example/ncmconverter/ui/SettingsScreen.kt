@@ -1,7 +1,8 @@
 package com.example.ncmconverter.ui
 
-import android.os.Build
 import android.app.Activity
+import android.content.res.Configuration
+import android.os.Build
 import androidx.annotation.StringRes
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
@@ -47,15 +48,16 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
-import androidx.appcompat.app.AppCompatDelegate
-import androidx.core.os.LocaleListCompat
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.ncmconverter.R
+import com.example.ncmconverter.ui.theme.AppFontWeights
+import com.example.ncmconverter.ui.theme.RhrFontFamily
 import com.example.ncmconverter.ui.theme.colorToHsl
 import com.example.ncmconverter.ui.theme.hslToArgbLong
 import com.example.ncmconverter.ui.theme.hslToColor
@@ -99,7 +101,7 @@ fun SettingsScreen(onBack: () -> Unit) {
 
     var themeMode by remember { mutableStateOf(AppPrefs.themeMode) }
     var customPath by remember { mutableStateOf(AppPrefs.customPath) }
-    var manualSave by remember { mutableStateOf(AppPrefs.manualSave) }
+    var autoSave by remember { mutableStateOf(AppPrefs.autoSave) }
     var enableLyric by remember { mutableStateOf(AppPrefs.enableLyric) }
     var lyricMode by remember { mutableStateOf(AppPrefs.lyricMode) }
     var lyricApiBaseUrl by remember { mutableStateOf(AppPrefs.lyricApiBaseUrl) }
@@ -113,6 +115,8 @@ fun SettingsScreen(onBack: () -> Unit) {
     var lightBgColor by remember { mutableLongStateOf(AppPrefs.customLightBgColor) }
     var darkBgColor by remember { mutableLongStateOf(AppPrefs.customDarkBgColor) }
     var appLanguage by remember { mutableStateOf(AppPrefs.appLanguage) }
+    var useEmbeddedFont by remember { mutableStateOf(AppPrefs.useEmbeddedFont) }
+    var fontWeight by remember { mutableIntStateOf(AppPrefs.fontWeight) }
 
     val isDark = when (themeMode) {
         AppPrefs.THEME_DARK -> true
@@ -127,6 +131,8 @@ fun SettingsScreen(onBack: () -> Unit) {
     var showInstructionsDialog by remember { mutableStateOf(false) }
     var showColumnsDialog by remember { mutableStateOf(false) }
     var pendingColumns by remember { mutableIntStateOf(gridColumns) }
+    var showLanguageChangeDialog by remember { mutableStateOf(false) }
+    var pendingLanguageCode by remember { mutableStateOf("") }
 
     var showHslSheet by remember { mutableStateOf(false) }
     var hslTarget by remember { mutableStateOf(HslTarget.ACCENT) }
@@ -181,11 +187,12 @@ fun SettingsScreen(onBack: () -> Unit) {
                 Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp)) {
                     Text(stringResource(R.string.pref_language), fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     LanguageDropdown(appLanguage, isDark) { code ->
-                        appLanguage = code
-                        AppPrefs.appLanguage = code
-                        val locales = if (code == "system") LocaleListCompat.getEmptyLocaleList()
-                                      else LocaleListCompat.forLanguageTags(code)
-                        AppCompatDelegate.setApplicationLocales(locales)
+                        if (code != appLanguage) {
+                            appLanguage = code
+                            AppPrefs.appLanguage = code
+                            pendingLanguageCode = code
+                            showLanguageChangeDialog = true
+                        }
                     }
                 }
             }
@@ -230,6 +237,39 @@ fun SettingsScreen(onBack: () -> Unit) {
                         checked = portraitGridEnabled,
                         onCheckedChange = { portraitGridEnabled = it; AppPrefs.portraitGridEnabled = it }
                     )
+                }
+            }
+
+            item(span = { GridItemSpan(maxLineSpan) }) {
+                val uriHandler = LocalUriHandler.current
+                FontSettingRow(
+                    useEmbeddedFont = useEmbeddedFont,
+                    onToggle = { useEmbeddedFont = it; AppPrefs.useEmbeddedFont = it },
+                    onLinkClick = { uriHandler.openUri("https://github.com/CyanoHao/Resource-Han-Rounded") }
+                )
+            }
+
+            item(key = "font_weight", span = { GridItemSpan(maxLineSpan) }) {
+                AnimatedVisibility(
+                    visible = useEmbeddedFont,
+                    enter = fadeIn(tween(300)) + expandVertically(tween(300)),
+                    exit = fadeOut(tween(200)) + shrinkVertically(tween(200))
+                ) {
+                    val weightIndex = AppFontWeights.indexOfFirst { it.first.weight == fontWeight }
+                        .coerceAtLeast(2)
+                    Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp)) {
+                        Slider(
+                            value = weightIndex.toFloat(),
+                            onValueChange = { idx ->
+                                val newWeight = AppFontWeights[idx.toInt()].first.weight
+                                fontWeight = newWeight
+                                AppPrefs.fontWeight = newWeight
+                            },
+                            valueRange = 0f..(AppFontWeights.size - 1).toFloat(),
+                            steps = AppFontWeights.size - 2,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
                 }
             }
 
@@ -339,10 +379,10 @@ fun SettingsScreen(onBack: () -> Unit) {
 
             item {
                 SettingSwitch(
-                    title = stringResource(R.string.pref_manual_save),
-                    subtitle = stringResource(if (manualSave) R.string.pref_manual_save_on else R.string.pref_manual_save_off),
-                    checked = manualSave,
-                    onCheckedChange = { manualSave = it; AppPrefs.manualSave = it }
+                    title = stringResource(R.string.pref_auto_save),
+                    subtitle = stringResource(if (autoSave) R.string.pref_auto_save_on else R.string.pref_auto_save_off),
+                    checked = autoSave,
+                    onCheckedChange = { autoSave = it; AppPrefs.autoSave = it }
                 )
             }
 
@@ -514,6 +554,27 @@ fun SettingsScreen(onBack: () -> Unit) {
                     showColumnsDialog = false
                     gridColumns = AppPrefs.gridColumns
                 }) { Text(stringResource(R.string.home_cancel)) }
+            }
+        )
+    }
+
+    if (showLanguageChangeDialog) {
+        val targetContext = remember(pendingLanguageCode) {
+            val locale = if (pendingLanguageCode == "system") java.util.Locale.getDefault()
+                         else java.util.Locale.forLanguageTag(pendingLanguageCode)
+            val config = Configuration(context.resources.configuration).apply {
+                this.locale = locale
+            }
+            context.createConfigurationContext(config)
+        }
+        AlertDialog(
+            onDismissRequest = { showLanguageChangeDialog = false },
+            title = { Text(targetContext.getString(R.string.lang_change_title)) },
+            text = { Text(targetContext.getString(R.string.lang_change_message)) },
+            confirmButton = {
+                TextButton(onClick = { showLanguageChangeDialog = false }) {
+                    Text(targetContext.getString(R.string.lang_change_confirm))
+                }
             }
         )
     }
@@ -724,11 +785,10 @@ private fun RowScope.ThemeChip(label: String, selected: Boolean, isDark: Boolean
 }
 
 @Composable
-private fun RowScope.LyricModeChip(label: String, selected: Boolean, onClick: () -> Unit) {
+private fun LyricModeChip(label: String, selected: Boolean, onClick: () -> Unit) {
     FilterChip(
         selected = selected, onClick = onClick,
-        label = { Text(label, fontSize = 14.sp) },
-        modifier = Modifier.weight(1f)
+        label = { Text(label, fontSize = 14.sp) }
     )
 }
 
@@ -744,6 +804,50 @@ private fun SettingSwitch(title: String, subtitle: String, checked: Boolean, onC
             Text(subtitle, fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
         Switch(checked = checked, onCheckedChange = onCheckedChange)
+    }
+}
+
+@Composable
+private fun FontSettingRow(
+    useEmbeddedFont: Boolean,
+    onToggle: (Boolean) -> Unit,
+    onLinkClick: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onToggle(!useEmbeddedFont) }
+            .padding(horizontal = 16.dp, vertical = 10.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                stringResource(R.string.pref_font),
+                fontSize = 14.sp,
+                color = MaterialTheme.colorScheme.onSurface,
+                fontFamily = if (useEmbeddedFont) RhrFontFamily else FontFamily.Default
+            )
+            if (useEmbeddedFont) {
+                Text(
+                    text = stringResource(R.string.font_embedded),
+                    fontSize = 11.sp,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null
+                    ) { onLinkClick() },
+                    fontFamily = RhrFontFamily
+                )
+            } else {
+                Text(
+                    stringResource(R.string.font_system),
+                    fontSize = 11.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+        Switch(checked = useEmbeddedFont, onCheckedChange = onToggle)
     }
 }
 

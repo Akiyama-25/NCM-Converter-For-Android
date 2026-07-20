@@ -6,21 +6,26 @@
 
 ## 功能
 
-- 批次轉換，最多同時處理 50 個檔案
+- 批次轉換，無檔案數量限制
 - 自動寫入中繼資料（標題、藝術家、專輯、封面）
 - 自動搜尋並嵌入歌詞（原文 / 翻譯 / 混合）
+- 背景轉換：開啟自動儲存後，轉換在前景服務中進行，通知欄顯示進度，切換應用不會中斷
 - Material You 動態取色（Android 12+）
 - 自訂強調色與背景色（HSL 滑桿）
 - 多欄格線佈局，適用於摺疊螢幕與平板
+- 預測型返回手勢支援（Android 16+）
+- 雙擊返回鍵退出
+- 行程意外終止後自動復原檔案列表
 - 多語言支援：簡體中文、繁體中文、English、日本語
 
 ## 系統需求
 
 - Android 8.0（API 26）及以上
+- 已適配 Android 16（API 36）
 
 ## 技術棧
 
-- Kotlin + Jetpack Compose
+- Kotlin + Jetpack Compose + Material 3
 - Retrofit2 + OkHttp4
 - AES-128-ECB / RC4 解密
 - MediaStore API

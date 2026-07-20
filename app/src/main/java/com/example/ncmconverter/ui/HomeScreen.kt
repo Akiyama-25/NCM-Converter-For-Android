@@ -1,7 +1,8 @@
 package com.example.ncmconverter.ui
 
 import android.app.Activity
-import android.net.Uri
+import android.widget.Toast
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.layout.*
@@ -29,7 +30,6 @@ import com.example.ncmconverter.decrypt.model.DecryptState
 import com.example.ncmconverter.util.AppPrefs
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
-import java.io.InputStream
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3WindowSizeClassApi::class)
 @Composable
@@ -37,8 +37,6 @@ fun HomeScreen(
     viewModel: ConvertViewModel,
     onPickFiles: () -> Unit,
     onSaveFile: (FileItem) -> Unit,
-    readBytes: (Uri) -> ByteArray,
-    openInputStream: (Uri) -> InputStream,
     onOpenSettings: () -> Unit
 ) {
     val files by viewModel.files.collectAsState()
@@ -55,6 +53,17 @@ fun HomeScreen(
     var showClearDialog by remember { mutableStateOf(false) }
     var newFileIds by remember { mutableStateOf(emptySet<Long>()) }
     var animatingOutItems by remember { mutableStateOf(emptyMap<Long, FileItem>()) }
+    var lastBackPress by remember { mutableStateOf(0L) }
+
+    BackHandler {
+        val now = System.currentTimeMillis()
+        if (now - lastBackPress < 2000) {
+            activity.finish()
+        } else {
+            lastBackPress = now
+            Toast.makeText(activity, activity.getString(R.string.press_back_again), Toast.LENGTH_SHORT).show()
+        }
+    }
     LaunchedEffect(files.map { it.id }) {
         val currentIds = files.map { it.id }.toSet()
         val previousIds = currentIds + animatingOutItems.keys
@@ -217,13 +226,13 @@ fun HomeScreen(
 
                         FileItemView(
                             item = item,
-                            onDecrypt = { viewModel.decryptSingle(item.id, readBytes, openInputStream) },
+                            onDecrypt = { viewModel.decryptSingle(item.id) },
                             onRemove = {
                                 animatingOutItems = animatingOutItems + (item.id to item)
                                 viewModel.removeFile(item.id)
                             },
                             onSave = { onSaveFile(item) },
-                            manualSave = AppPrefs.manualSave,
+                            autoSave = AppPrefs.autoSave,
                             enableCover = AppPrefs.enableCover,
                             modifier = Modifier.graphicsLayer {
                                 alpha = animatedAlpha
@@ -241,7 +250,9 @@ fun HomeScreen(
                 exit = slideOutVertically(targetOffsetY = { it }) + fadeOut()
             ) {
                 Surface(
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .navigationBarsPadding(),
                     shadowElevation = 8.dp,
                     color = MaterialTheme.colorScheme.surfaceVariant
                 ) {
@@ -262,7 +273,7 @@ fun HomeScreen(
                         }
 
                         Button(
-                            onClick = { viewModel.decryptAll(readBytes, openInputStream) },
+                            onClick = { viewModel.decryptAll() },
                             modifier = Modifier.weight(1f),
                             enabled = !isProcessing && files.any {
                                 it.state == DecryptState.IDLE || it.state == DecryptState.FAILED

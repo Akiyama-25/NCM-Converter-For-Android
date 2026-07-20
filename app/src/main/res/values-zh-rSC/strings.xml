@@ -70,10 +70,19 @@
     <string name="pref_hsl_lightness">明度</string>
     <string name="pref_hsl_saturation">饱和度</string>
 
+    <!-- Font -->
+    <string name="pref_font">字体</string>
+    <string name="font_system">系统默认</string>
+    <string name="font_embedded">Resource Han Round</string>
+    <string name="font_weight">字重</string>
+    <string name="lang_change_title">语言已更改</string>
+    <string name="lang_change_message">返回主页面后将应用新语言。</string>
+    <string name="lang_change_confirm">好的</string>
+
     <string name="pref_save_path">保存路径</string>
-    <string name="pref_manual_save">手动点击保存</string>
-    <string name="pref_manual_save_on">转换完成后需手动点击保存按钮</string>
-    <string name="pref_manual_save_off">转换完成后自动保存</string>
+    <string name="pref_auto_save">自动保存</string>
+    <string name="pref_auto_save_on">转换完成后自动保存文件，并启用后台转换（通知栏显示进度）</string>
+    <string name="pref_auto_save_off">转换完成后需手动点击保存，不启用后台转换</string>
     <string name="pref_auto_cover">自动获取封面</string>
     <string name="pref_auto_cover_on">转换时自动从网络下载歌曲封面</string>
     <string name="pref_auto_cover_off">不下载封面图片（离线可用）</string>
@@ -128,6 +137,15 @@
     <string name="lang_zh_tw">繁體中文</string>
     <string name="lang_en">English</string>
     <string name="lang_ja">日本語</string>
+
+    <!-- Back press -->
+    <string name="press_back_again">再按一次返回键退出</string>
+
+    <!-- DecryptService notification -->
+    <string name="notif_channel_name">解密进度</string>
+    <string name="notif_title">正在解密 NCM 文件</string>
+    <string name="notif_text">后台转换中…</string>
+    <string name="notif_progress">%1$d / %2$d</string>
 
     <!-- FileUtils -->
     <string name="fileutils_open_failed">无法打开文件</string>

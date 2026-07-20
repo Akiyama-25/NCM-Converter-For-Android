@@ -1,28 +1,31 @@
 [简体中文](https://github.com/Akiyama-25/NCM-Converter-For-Android/blob/main/README.md) | [繁體中文](https://github.com/Akiyama-25/NCM-Converter-For-Android/blob/main/README_TC.md) | [日本語](https://github.com/Akiyama-25/NCM-Converter-For-Android/blob/main/README_JA.md)
 
-This README is translated from Chinese by Claude and haven't received. ~~well just because im a lazy guy :(~~
-
 # NCM Converter
 
 An Android app that decrypts NetEase Cloud Music's encrypted `.ncm` files into standard MP3 or FLAC format.
 
 ## Features
 
-- Batch conversion, up to 50 files at once
+- Batch conversion with no file limit
 - Automatic metadata writing (title, artist, album, cover art)
 - Automatic lyric search and embedding (original / translated / merged)
+- Background conversion: when auto-save is enabled, conversion runs in a foreground service with notification progress — switching apps won't interrupt it
 - Material You dynamic colors (Android 12+)
 - Custom accent and background colors via HSL sliders
 - Multi-column grid layout, optimized for foldables and tablets
+- Predictive back gesture support (Android 16+)
+- Double-tap back to exit
+- Automatic file list recovery after unexpected process death
 - Multi-language support: Simplified Chinese, Traditional Chinese, English, Japanese
 
 ## Requirements
 
 - Android 8.0 (API 26) or higher
+- Android 16 (API 36) supported
 
 ## Tech Stack
 
-- Kotlin + Jetpack Compose
+- Kotlin + Jetpack Compose + Material 3
 - Retrofit2 + OkHttp4
 - AES-128-ECB / RC4 decryption
 - MediaStore API

@@ -11,7 +11,7 @@ object AppPrefs {
     private const val NAME = "ncm_converter_prefs"
     private const val KEY_THEME_MODE = "theme_mode"
     private const val KEY_CUSTOM_PATH = "custom_path"
-    private const val KEY_MANUAL_SAVE = "manual_save"
+    private const val KEY_AUTO_SAVE = "auto_save"
     private const val KEY_ENABLE_LYRIC = "enable_lyric"
     private const val KEY_LYRIC_MODE = "lyric_mode"
     private const val KEY_LYRIC_API_BASE_URL = "lyric_api_base_url"
@@ -30,6 +30,8 @@ object AppPrefs {
     private const val KEY_GRID_COLUMNS = "grid_columns"
     private const val KEY_PORTRAIT_GRID_ENABLED = "portrait_grid_enabled"
     private const val KEY_APP_LANGUAGE = "app_language"
+    private const val KEY_USE_EMBEDDED_FONT = "use_embedded_font"
+    private const val KEY_FONT_WEIGHT = "font_weight"
     const val THEME_SYSTEM = "system"
     const val THEME_LIGHT = "light"
     const val THEME_DARK = "dark"
@@ -83,6 +85,12 @@ object AppPrefs {
     private val _portraitGridEnabledFlow = MutableStateFlow(false)
     val portraitGridEnabledFlow: StateFlow<Boolean> = _portraitGridEnabledFlow.asStateFlow()
 
+    private val _useEmbeddedFontFlow = MutableStateFlow(false)
+    val useEmbeddedFontFlow: StateFlow<Boolean> = _useEmbeddedFontFlow.asStateFlow()
+
+    private val _fontWeightFlow = MutableStateFlow(400)
+    val fontWeightFlow: StateFlow<Int> = _fontWeightFlow.asStateFlow()
+
     fun init(context: Context) {
         prefs = context.getSharedPreferences(NAME, Context.MODE_PRIVATE)
         _themeFlow.value = themeMode // sync initial state
@@ -98,6 +106,8 @@ object AppPrefs {
         _bgLFlow.value = customBgL
         _gridColumnsFlow.value = gridColumns
         _portraitGridEnabledFlow.value = portraitGridEnabled
+        _useEmbeddedFontFlow.value = useEmbeddedFont
+        _fontWeightFlow.value = fontWeight
     }
 
     var themeMode: String
@@ -111,9 +121,9 @@ object AppPrefs {
         get() = prefs.getString(KEY_CUSTOM_PATH, "Music/NCMConverter") ?: "Music/NCMConverter"
         set(value) = prefs.edit().putString(KEY_CUSTOM_PATH, value).apply()
 
-    var manualSave: Boolean
-        get() = prefs.getBoolean(KEY_MANUAL_SAVE, true)
-        set(value) = prefs.edit().putBoolean(KEY_MANUAL_SAVE, value).apply()
+    var autoSave: Boolean
+        get() = prefs.getBoolean(KEY_AUTO_SAVE, false)
+        set(value) = prefs.edit().putBoolean(KEY_AUTO_SAVE, value).apply()
 
     var enableLyric: Boolean
         get() = prefs.getBoolean(KEY_ENABLE_LYRIC, true)
@@ -217,6 +227,20 @@ object AppPrefs {
         set(value) {
             prefs.edit().putBoolean(KEY_PORTRAIT_GRID_ENABLED, value).apply()
             _portraitGridEnabledFlow.value = value
+        }
+
+    var useEmbeddedFont: Boolean
+        get() = prefs.getBoolean(KEY_USE_EMBEDDED_FONT, true)
+        set(value) {
+            prefs.edit().putBoolean(KEY_USE_EMBEDDED_FONT, value).apply()
+            _useEmbeddedFontFlow.value = value
+        }
+
+    var fontWeight: Int
+        get() = prefs.getInt(KEY_FONT_WEIGHT, 400)
+        set(value) {
+            prefs.edit().putInt(KEY_FONT_WEIGHT, value.coerceIn(200, 900)).apply()
+            _fontWeightFlow.value = value.coerceIn(200, 900)
         }
 
     var appLanguage: String

@@ -30,7 +30,7 @@ fun FileItemView(
     onDecrypt: () -> Unit,
     onRemove: () -> Unit,
     onSave: () -> Unit,
-    manualSave: Boolean,
+    autoSave: Boolean,
     enableCover: Boolean,
     modifier: Modifier = Modifier
 ) {
@@ -236,7 +236,7 @@ fun FileItemView(
                         }
                     }
                     DecryptState.COMPLETED, DecryptState.COMPLETED_NO_LYRIC -> {
-                        if (manualSave) {
+                        if (!autoSave) {
                             IconButton(onClick = onSave) {
                                 Icon(
                                     Icons.Filled.SaveAlt,

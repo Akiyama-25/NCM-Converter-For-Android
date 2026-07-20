@@ -1,7 +1,8 @@
 package com.example.ncmconverter
 
 import android.content.Intent
-import android.net.Uri
+import android.graphics.drawable.ColorDrawable
+import android.os.Build
 import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
@@ -10,12 +11,14 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.compose.runtime.LaunchedEffect
+import androidx.core.content.ContextCompat
 import androidx.core.os.LocaleListCompat
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
 import com.example.ncmconverter.decrypt.model.DecryptState
 import com.example.ncmconverter.metadata.FlacMetadataWriter
 import com.example.ncmconverter.metadata.Mp3MetadataWriter
+import com.example.ncmconverter.service.DecryptService
 import com.example.ncmconverter.ui.ConvertViewModel
 import com.example.ncmconverter.ui.FileItem
 import com.example.ncmconverter.ui.HomeScreen
@@ -26,7 +29,13 @@ import kotlinx.coroutines.launch
 
 class MainActivity : AppCompatActivity() {
 
+    companion object {
+        private const val KEY_FILE_URIS = "file_uris"
+        private const val KEY_FILE_NAMES = "file_names"
+    }
+
     private lateinit var viewModel: ConvertViewModel
+    private var lastAppliedLanguage: String? = null
 
     private val filePickerLauncher = registerForActivityResult(
         ActivityResultContracts.OpenMultipleDocuments()
@@ -43,12 +52,17 @@ class MainActivity : AppCompatActivity() {
             if (ncmFiles.size < uris.size) {
                 Toast.makeText(this, "已过滤非 .ncm 文件", Toast.LENGTH_SHORT).show()
             }
-            val capped = if (ncmFiles.size > 50) {
-                Toast.makeText(this, "最多选择 50 个文件，已截取前 50 个", Toast.LENGTH_LONG).show()
-                ncmFiles.take(50)
-            } else ncmFiles
 
-            val fileList = capped.map { uri ->
+            // Take persistable URI permission so files survive process death
+            for (uri in ncmFiles) {
+                try {
+                    contentResolver.takePersistableUriPermission(
+                        uri, android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION
+                    )
+                } catch (_: Exception) {}
+            }
+
+            val fileList = ncmFiles.map { uri ->
                 val name = FileUtils.queryFileName(uri, this) ?: uri.lastPathSegment ?: "unknown"
                 uri to name
             }
@@ -60,25 +74,45 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         AppPrefs.init(this)
 
-        // Apply saved language — always reset AppCompat locale to prevent stale overrides
+        // Apply saved language
         try {
             val lang = AppPrefs.appLanguage
+            lastAppliedLanguage = lang
             val locales = if (lang == "system") LocaleListCompat.getEmptyLocaleList()
                           else LocaleListCompat.forLanguageTags(lang)
             AppCompatDelegate.setApplicationLocales(locales)
         } catch (_: Exception) {
-            // Fallback: if locale setting fails, let system default take over
         }
 
         viewModel = ViewModelProvider(this)[ConvertViewModel::class.java]
 
+        // Restore file list after process death
+        if (savedInstanceState != null && viewModel.files.value.isEmpty()) {
+            val uriStrings = savedInstanceState.getStringArray(KEY_FILE_URIS)
+            val names = savedInstanceState.getStringArray(KEY_FILE_NAMES)
+            if (uriStrings != null && names != null && uriStrings.size == names.size) {
+                val fileList = uriStrings.mapIndexed { i, s ->
+                    android.net.Uri.parse(s) to names[i]
+                }
+                viewModel.addFiles(fileList) { uri -> FileUtils.queryFileSize(uri, this) }
+            }
+        }
+
+        // Start DecryptService for background conversion (only when autoSave is enabled)
+        if (AppPrefs.autoSave) {
+            startForegroundService(Intent(this, DecryptService::class.java))
+        }
+
         enableEdgeToEdge()
+        window.setBackgroundDrawable(ColorDrawable(
+            ContextCompat.getColor(this, R.color.window_bg)
+        ))
 
         setContent {
-            // Observe completed items for auto-save
+            // Observe completed items for auto-save (only when autoSave is enabled)
             LaunchedEffect(Unit) {
                 viewModel.completedItem.collect { item ->
-                    if (!AppPrefs.manualSave) {
+                    if (AppPrefs.autoSave) {
                         saveResult(item)
                     }
                 }
@@ -89,15 +123,40 @@ class MainActivity : AppCompatActivity() {
                     viewModel = viewModel,
                     onPickFiles = { filePickerLauncher.launch(arrayOf("*/*")) },
                     onSaveFile = { item -> saveResult(item) },
-                    readBytes = { uri -> FileUtils.readBytes(uri, this) },
-                    openInputStream = { uri -> contentResolver.openInputStream(uri)
-                        ?: throw IllegalArgumentException("无法打开文件") },
                     onOpenSettings = {
                         startActivity(Intent(this, SettingsActivity::class.java))
-                        overridePendingTransition(R.anim.slide_in_right, R.anim.slide_out_left)
+                        if (Build.VERSION.SDK_INT >= 34) {
+                            @Suppress("WrongConstant")
+                            overrideActivityTransition(0, R.anim.slide_in_right, R.anim.slide_out_left)
+                        } else {
+                            @Suppress("DEPRECATION")
+                            overridePendingTransition(R.anim.slide_in_right, R.anim.slide_out_left)
+                        }
                     }
                 )
             }
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        val lang = AppPrefs.appLanguage
+        if (lang != lastAppliedLanguage) {
+            lastAppliedLanguage = lang
+            try {
+                val locales = if (lang == "system") LocaleListCompat.getEmptyLocaleList()
+                              else LocaleListCompat.forLanguageTags(lang)
+                AppCompatDelegate.setApplicationLocales(locales)
+            } catch (_: Exception) {}
+        }
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        val files = viewModel.files.value
+        if (files.isNotEmpty()) {
+            outState.putStringArray(KEY_FILE_URIS, files.map { it.uri.toString() }.toTypedArray())
+            outState.putStringArray(KEY_FILE_NAMES, files.map { it.name }.toTypedArray())
         }
     }
 
@@ -126,6 +185,9 @@ class MainActivity : AppCompatActivity() {
                 }
             } catch (e: Exception) {
                 Toast.makeText(this@MainActivity, "保存失败: ${e.message}", Toast.LENGTH_SHORT).show()
+            } finally {
+                // Release decrypted audio data from memory
+                viewModel.clearResult(item.id)
             }
         }
     }

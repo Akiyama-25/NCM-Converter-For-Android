@@ -6,21 +6,26 @@
 
 ## 功能
 
-- 批量转换，最多同时处理 50 个文件
+- 批量转换，无文件数量限制
 - 自动写入元数据（标题、艺术家、专辑、封面）
 - 自动搜索并嵌入歌词（原文 / 翻译 / 混合）
+- 后台转换：开启自动保存后，转换在前台服务中进行，通知栏显示进度，切换应用不中断
 - Material You 动态取色（Android 12+）
 - 自定义强调色与背景色（HSL 滑条）
 - 多列网格布局，适配折叠屏与平板
+- 预测性返回手势支持（Android 16+）
+- 双击返回键退出
+- 进程意外终止后自动恢复文件列表
 - 多语言支持：简体中文、繁体中文、English、日本語
 
 ## 系统要求
 
 - Android 8.0（API 26）及以上
+- 已适配 Android 16（API 36）
 
 ## 技术栈
 
-- Kotlin + Jetpack Compose
+- Kotlin + Jetpack Compose + Material 3
 - Retrofit2 + OkHttp4
 - AES-128-ECB / RC4 解密
 - MediaStore API

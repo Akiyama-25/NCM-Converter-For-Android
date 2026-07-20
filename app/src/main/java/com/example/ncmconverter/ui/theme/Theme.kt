@@ -3,6 +3,7 @@ package com.example.ncmconverter.ui.theme
 import android.app.Activity
 import android.os.Build
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Typography
 import androidx.compose.material3.dynamicDarkColorScheme
 import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.runtime.Composable
@@ -11,6 +12,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 import com.example.ncmconverter.util.AppPrefs
@@ -24,6 +26,8 @@ fun NcmConverterTheme(content: @Composable () -> Unit) {
     val accentColor by AppPrefs.accentColorFlow.collectAsState()
     val lightBg by AppPrefs.lightBgColorFlow.collectAsState()
     val darkBg by AppPrefs.darkBgColorFlow.collectAsState()
+    val useEmbeddedFont by AppPrefs.useEmbeddedFontFlow.collectAsState()
+    val fontWeightValue by AppPrefs.fontWeightFlow.collectAsState()
 
     val darkTheme = when (themeMode) {
         AppPrefs.THEME_DARK -> true
@@ -56,5 +60,11 @@ fun NcmConverterTheme(content: @Composable () -> Unit) {
         }
     }
 
-    MaterialTheme(colorScheme = colorScheme, content = content)
+    val typography = if (useEmbeddedFont) {
+        appTypography(FontWeight(fontWeightValue))
+    } else {
+        Typography()
+    }
+
+    MaterialTheme(colorScheme = colorScheme, typography = typography, content = content)
 }

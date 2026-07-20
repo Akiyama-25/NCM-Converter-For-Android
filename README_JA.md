@@ -1,28 +1,31 @@
 [简体中文](https://github.com/Akiyama-25/NCM-Converter-For-Android/blob/main/README.md) | [繁體中文](https://github.com/Akiyama-25/NCM-Converter-For-Android/blob/main/README_TC.md) | [English](https://github.com/Akiyama-25/NCM-Converter-For-Android/blob/main/README_EN.md)
 
-この文書は「**Claude**」によって翻訳されました。
-
 # NCM コンバーター
 
 NetEase Cloud Music で暗号化された `.ncm` ファイルを標準的な MP3 または FLAC 形式に復号する Android アプリです。
 
 ## 機能
 
-- バッチ変換、最大50ファイル同時処理
+- ファイル数制限なしのバッチ変換
 - メタデータ自動書き込み（タイトル、アーティスト、アルバム、カバーアート）
 - 歌詞の自動検索・埋め込み（原文 / 翻訳 / 混合）
+- バックグラウンド変換：自動保存を有効にすると、フォアグラウンドサービスで変換を実行し、通知バーに進捗を表示。アプリ切り替えしても中断しません
 - Material You ダイナミックカラー（Android 12+）
 - HSL スライダーによるアクセントカラー・背景色のカスタマイズ
 - マルチカラムグリッドレイアウト、折りたたみ端末・タブレット対応
+- 予測型バックジェスチャー対応（Android 16+）
+- ダブルタップで終了
+- プロセス異常終了後のファイルリスト自動復元
 - 多言語対応：簡体字中国語、繁体字中国語、English、日本語
 
 ## 動作要件
 
 - Android 8.0（API 26）以上
+- Android 16（API 36）対応済み
 
 ## 技術スタック
 
-- Kotlin + Jetpack Compose
+- Kotlin + Jetpack Compose + Material 3
 - Retrofit2 + OkHttp4
 - AES-128-ECB / RC4 復号
 - MediaStore API

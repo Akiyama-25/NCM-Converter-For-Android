@@ -6,14 +6,14 @@ plugins {
 
 android {
     namespace = "com.example.ncmconverter"
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "Akari.Said.YuriBest"
         minSdk = 26
-        targetSdk = 35
-        versionCode = 5
-        versionName = "release-0.5"
+        targetSdk = 36
+        versionCode = 6
+        versionName = "release-0.6"
     }
 
     buildTypes {
@@ -41,7 +41,7 @@ android {
 }
 
 dependencies {
-    val composeBom = platform("androidx.compose:compose-bom:2024.02.00")
+    val composeBom = platform("androidx.compose:compose-bom:2025.05.01")
     implementation(composeBom)
 
     implementation("androidx.compose.ui:ui")
@@ -51,13 +51,13 @@ dependencies {
     implementation("androidx.compose.material3:material3-window-size-class")
     implementation("androidx.compose.material:material-icons-extended")
 
-    implementation("androidx.activity:activity-compose:1.8.2")
+    implementation("androidx.activity:activity-compose:1.10.1")
     implementation("androidx.appcompat:appcompat:1.6.1")
-    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.7.0")
-    implementation("androidx.lifecycle:lifecycle-runtime-compose:2.7.0")
+    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.9.1")
+    implementation("androidx.lifecycle:lifecycle-runtime-compose:2.9.1")
 
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
-    implementation("io.coil-kt:coil-compose:2.5.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.2")
+    implementation("io.coil-kt:coil-compose:2.7.0")
 
     // Network
     implementation("com.squareup.retrofit2:retrofit:2.9.0")
@@ -66,4 +66,6 @@ dependencies {
     implementation("com.squareup.okhttp3:logging-interceptor:4.12.0")
 
     debugImplementation("androidx.compose.ui:ui-tooling")
+
+    testImplementation("junit:junit:4.13.2")
 }

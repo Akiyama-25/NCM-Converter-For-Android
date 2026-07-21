@@ -14,6 +14,8 @@ object AppPrefs {
     private const val KEY_AUTO_SAVE = "auto_save"
     private const val KEY_ENABLE_LYRIC = "enable_lyric"
     private const val KEY_LYRIC_MODE = "lyric_mode"
+    private const val KEY_LYRIC_EMBED_ORIGINAL = "lyric_embed_original"
+    private const val KEY_LYRIC_EMBED_TRANSLATED = "lyric_embed_translated"
     private const val KEY_LYRIC_API_BASE_URL = "lyric_api_base_url"
     private const val KEY_LYRIC_REAL_IP = "lyric_real_ip"
     private const val KEY_ENABLE_COVER = "enable_cover"
@@ -32,6 +34,7 @@ object AppPrefs {
     private const val KEY_APP_LANGUAGE = "app_language"
     private const val KEY_USE_EMBEDDED_FONT = "use_embedded_font"
     private const val KEY_FONT_WEIGHT = "font_weight"
+    private const val KEY_CUSTOM_OUTPUT_URI = "custom_output_uri"
     const val THEME_SYSTEM = "system"
     const val THEME_LIGHT = "light"
     const val THEME_DARK = "dark"
@@ -93,7 +96,7 @@ object AppPrefs {
 
     fun init(context: Context) {
         prefs = context.getSharedPreferences(NAME, Context.MODE_PRIVATE)
-        _themeFlow.value = themeMode // sync initial state
+        _themeFlow.value = themeMode
         _monetFlow.value = useMonetColors
         _accentColorFlow.value = customAccentColor
         _lightBgColorFlow.value = customLightBgColor
@@ -108,6 +111,24 @@ object AppPrefs {
         _portraitGridEnabledFlow.value = portraitGridEnabled
         _useEmbeddedFontFlow.value = useEmbeddedFont
         _fontWeightFlow.value = fontWeight
+        // Migrate old lyricMode to new booleans if needed
+        migrateLyricMode()
+    }
+
+    private fun migrateLyricMode() {
+        if (prefs.contains(KEY_LYRIC_MODE) && !prefs.contains(KEY_LYRIC_EMBED_ORIGINAL)) {
+            val mode = prefs.getString(KEY_LYRIC_MODE, LYRIC_MODE_MERGED) ?: LYRIC_MODE_MERGED
+            val (orig, trans) = when (mode) {
+                LYRIC_MODE_RAW -> true to false
+                LYRIC_MODE_TRANSLATED -> false to true
+                else -> true to true
+            }
+            prefs.edit()
+                .putBoolean(KEY_LYRIC_EMBED_ORIGINAL, orig)
+                .putBoolean(KEY_LYRIC_EMBED_TRANSLATED, trans)
+                .remove(KEY_LYRIC_MODE)
+                .apply()
+        }
     }
 
     var themeMode: String
@@ -121,6 +142,10 @@ object AppPrefs {
         get() = prefs.getString(KEY_CUSTOM_PATH, "Music/NCMConverter") ?: "Music/NCMConverter"
         set(value) = prefs.edit().putString(KEY_CUSTOM_PATH, value).apply()
 
+    var customOutputUri: String
+        get() = prefs.getString(KEY_CUSTOM_OUTPUT_URI, "") ?: ""
+        set(value) = prefs.edit().putString(KEY_CUSTOM_OUTPUT_URI, value).apply()
+
     var autoSave: Boolean
         get() = prefs.getBoolean(KEY_AUTO_SAVE, false)
         set(value) = prefs.edit().putBoolean(KEY_AUTO_SAVE, value).apply()
@@ -129,9 +154,13 @@ object AppPrefs {
         get() = prefs.getBoolean(KEY_ENABLE_LYRIC, true)
         set(value) = prefs.edit().putBoolean(KEY_ENABLE_LYRIC, value).apply()
 
-    var lyricMode: String
-        get() = prefs.getString(KEY_LYRIC_MODE, LYRIC_MODE_MERGED) ?: LYRIC_MODE_MERGED
-        set(value) = prefs.edit().putString(KEY_LYRIC_MODE, value).apply()
+    var lyricEmbedOriginal: Boolean
+        get() = prefs.getBoolean(KEY_LYRIC_EMBED_ORIGINAL, true)
+        set(value) = prefs.edit().putBoolean(KEY_LYRIC_EMBED_ORIGINAL, value).apply()
+
+    var lyricEmbedTranslated: Boolean
+        get() = prefs.getBoolean(KEY_LYRIC_EMBED_TRANSLATED, true)
+        set(value) = prefs.edit().putBoolean(KEY_LYRIC_EMBED_TRANSLATED, value).apply()
 
     var lyricApiBaseUrl: String
         get() = prefs.getString(KEY_LYRIC_API_BASE_URL, "") ?: ""

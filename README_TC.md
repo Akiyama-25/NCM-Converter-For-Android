@@ -8,7 +8,8 @@
 
 - 批次轉換，無檔案數量限制
 - 自動寫入中繼資料（標題、藝術家、專輯、封面）
-- 自動搜尋並嵌入歌詞（原文 / 翻譯 / 混合）
+- 自動搜尋並嵌入歌詞，支援原文與翻譯獨立開關控制
+- 系統資料夾選擇器設定輸出目錄，使用 DocumentTree 持久權限
 - 背景轉換：開啟自動儲存後，轉換在前景服務中進行，通知欄顯示進度，切換應用不會中斷
 - Material You 動態取色（Android 12+）
 - 自訂強調色與背景色（HSL 滑桿）
@@ -28,7 +29,7 @@
 - Kotlin + Jetpack Compose + Material 3
 - Retrofit2 + OkHttp4
 - AES-128-ECB / RC4 解密
-- MediaStore API
+- MediaStore API / DocumentFile
 
 ## 建置
 
@@ -43,8 +44,11 @@ cd NCM-Converter-For-Android
 歌詞自動嵌入功能需要搭配自建的網易雲音樂 API 服務使用。
 
 1. 部署 [NeteaseCloudMusicApiEnhanced](https://github.com/neteasecloudmusicapienhanced/api-enhanced)
-2. 在 APP 設定中填入 API 位址
-3. 如需指定地區，可填入 Real IP 參數
+2. 在 APP 設定中通過對話框填入 API 位址，儲存後才會顯示歌詞相關選項
+3. 歌詞功能開啟後，可獨立控制是否嵌入「原文歌詞」與「翻譯歌詞」
+4. 如需指定地區，可填入 Real IP 參數
+
+> 註：翻譯歌詞功能僅支援簡體中文翻譯結果。當 APP 語言不是簡體中文時，翻譯開關會顯示相應提示。
 
 ## 參考專案
 

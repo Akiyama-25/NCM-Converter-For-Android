@@ -175,10 +175,18 @@ class ConvertViewModel(application: Application) : AndroidViewModel(application)
             if (response != null) {
                 val original = LrcParser.parse(response.lrc?.lyric)
                 val translated = LrcParser.parse(response.tlyric?.lyric)
-                val lyric = when (AppPrefs.lyricMode) {
-                    "raw" -> LrcParser.toLrcString(original)
-                    "translated" -> if (translated.isNotEmpty()) LrcParser.toLrcString(translated) else LrcParser.toLrcString(original)
-                    else -> LrcParser.merge(original, translated)
+                val hasOriginal = original.isNotEmpty()
+                val hasTranslated = translated.isNotEmpty()
+                val lyric = when {
+                    AppPrefs.lyricEmbedOriginal && AppPrefs.lyricEmbedTranslated && hasOriginal && hasTranslated ->
+                        LrcParser.merge(original, translated)
+                    AppPrefs.lyricEmbedTranslated && hasTranslated ->
+                        LrcParser.toLrcString(translated)
+                    AppPrefs.lyricEmbedOriginal && hasOriginal ->
+                        LrcParser.toLrcString(original)
+                    hasOriginal -> LrcParser.toLrcString(original)
+                    hasTranslated -> LrcParser.toLrcString(translated)
+                    else -> ""
                 }
                 if (lyric.isNotBlank()) result.copy(lyric = lyric) else result
             } else {

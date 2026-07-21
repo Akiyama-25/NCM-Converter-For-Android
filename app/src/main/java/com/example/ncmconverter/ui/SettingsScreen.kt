@@ -26,6 +26,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.FolderOpen
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material3.*
@@ -55,6 +56,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.documentfile.provider.DocumentFile
 import com.example.ncmconverter.R
 import com.example.ncmconverter.ui.theme.AppFontWeights
 import com.example.ncmconverter.ui.theme.RhrFontFamily
@@ -94,16 +96,18 @@ private enum class HslTarget { ACCENT, BG }
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3WindowSizeClassApi::class)
 @Composable
-fun SettingsScreen(onBack: () -> Unit) {
+fun SettingsScreen(onBack: () -> Unit, onPickOutputFolder: () -> Unit = {}) {
     val focusManager = LocalFocusManager.current
     val context = LocalContext.current
     val activity = context as Activity
 
     var themeMode by remember { mutableStateOf(AppPrefs.themeMode) }
     var customPath by remember { mutableStateOf(AppPrefs.customPath) }
+    var customOutputUri by remember { mutableStateOf(AppPrefs.customOutputUri) }
     var autoSave by remember { mutableStateOf(AppPrefs.autoSave) }
     var enableLyric by remember { mutableStateOf(AppPrefs.enableLyric) }
-    var lyricMode by remember { mutableStateOf(AppPrefs.lyricMode) }
+    var lyricEmbedOriginal by remember { mutableStateOf(AppPrefs.lyricEmbedOriginal) }
+    var lyricEmbedTranslated by remember { mutableStateOf(AppPrefs.lyricEmbedTranslated) }
     var lyricApiBaseUrl by remember { mutableStateOf(AppPrefs.lyricApiBaseUrl) }
     var lyricRealIP by remember { mutableStateOf(AppPrefs.lyricRealIP) }
     var enableCover by remember { mutableStateOf(AppPrefs.enableCover) }
@@ -139,6 +143,37 @@ fun SettingsScreen(onBack: () -> Unit) {
     var sliderH by remember { mutableFloatStateOf(0f) }
     var sliderS by remember { mutableFloatStateOf(0f) }
     var sliderL by remember { mutableFloatStateOf(0f) }
+
+    // API URL dialog state
+    var showApiUrlDialog by remember { mutableStateOf(false) }
+    var pendingApiUrl by remember { mutableStateOf(lyricApiBaseUrl) }
+
+    // Determine output folder display name
+    val outputFolderName = remember(AppPrefs.customOutputUri) {
+        if (AppPrefs.customOutputUri.isNotBlank()) {
+            try {
+                val treeUri = android.net.Uri.parse(AppPrefs.customOutputUri)
+                val doc = DocumentFile.fromTreeUri(context, treeUri)
+                doc?.name ?: AppPrefs.customOutputUri
+            } catch (_: Exception) {
+                AppPrefs.customOutputUri
+            }
+        } else {
+            AppPrefs.customPath
+        }
+    }
+
+    // Check if current language is Simplified Chinese
+    val isSimplifiedChinese = remember(appLanguage) {
+        when (appLanguage) {
+            "zh-SC" -> true
+            "system" -> {
+                val locale = java.util.Locale.getDefault()
+                locale.language == "zh" && (locale.country == "CN" || locale.script == "Hans")
+            }
+            else -> false
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -365,16 +400,31 @@ fun SettingsScreen(onBack: () -> Unit) {
             item(span = { GridItemSpan(maxLineSpan) }) { HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp)) }
             item(span = { GridItemSpan(maxLineSpan) }) { SectionHeader(stringResource(R.string.section_convert)) }
 
+            // Output folder picker
             item(span = { GridItemSpan(maxLineSpan) }) {
-                OutlinedTextField(
-                    value = customPath,
-                    onValueChange = { customPath = it; AppPrefs.customPath = it },
-                    label = { Text(stringResource(R.string.pref_save_path)) },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Ascii, imeAction = ImeAction.Done),
-                    keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() })
-                )
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { onPickOutputFolder() }
+                        .padding(horizontal = 16.dp, vertical = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        Icons.Filled.FolderOpen,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(20.dp)
+                    )
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(stringResource(R.string.pref_save_path), fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurface)
+                        Text(
+                            outputFolderName,
+                            fontSize = 11.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
             }
 
             item {
@@ -399,73 +449,94 @@ fun SettingsScreen(onBack: () -> Unit) {
             item(span = { GridItemSpan(maxLineSpan) }) { HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp)) }
             item(span = { GridItemSpan(maxLineSpan) }) { SectionHeader(stringResource(R.string.section_lyrics)) }
 
-            item {
-                SettingSwitch(
-                    title = stringResource(R.string.pref_auto_lyric),
-                    subtitle = stringResource(if (enableLyric) R.string.pref_auto_lyric_on else R.string.pref_auto_lyric_off),
-                    checked = enableLyric,
-                    onCheckedChange = { enableLyric = it; AppPrefs.enableLyric = it }
-                )
-            }
-
-            item(key = "lyric_mode") {
-                AnimatedVisibility(
-                    visible = enableLyric,
-                    enter = fadeIn(tween(300)) + expandVertically(tween(300)),
-                    exit = fadeOut(tween(200)) + shrinkVertically(tween(200))
+            // API URL setting (always visible)
+            item(span = { GridItemSpan(maxLineSpan) }) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { pendingApiUrl = lyricApiBaseUrl; showApiUrlDialog = true }
+                        .padding(horizontal = 16.dp, vertical = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 4.dp)) {
-                        Text(stringResource(R.string.pref_lyric_mode), fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                            LyricModeChip(stringResource(R.string.pref_lyric_mode_merged), lyricMode == AppPrefs.LYRIC_MODE_MERGED) {
-                                lyricMode = AppPrefs.LYRIC_MODE_MERGED; AppPrefs.lyricMode = lyricMode
-                            }
-                            LyricModeChip(stringResource(R.string.pref_lyric_mode_raw), lyricMode == AppPrefs.LYRIC_MODE_RAW) {
-                                lyricMode = AppPrefs.LYRIC_MODE_RAW; AppPrefs.lyricMode = lyricMode
-                            }
-                            LyricModeChip(stringResource(R.string.pref_lyric_mode_translated), lyricMode == AppPrefs.LYRIC_MODE_TRANSLATED) {
-                                lyricMode = AppPrefs.LYRIC_MODE_TRANSLATED; AppPrefs.lyricMode = lyricMode
-                            }
-                        }
+                    Icon(
+                        Icons.Filled.Edit,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(20.dp)
+                    )
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(stringResource(R.string.pref_lyric_api), fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurface)
                         Text(
-                            stringResource(
-                                when (lyricMode) {
-                                    AppPrefs.LYRIC_MODE_MERGED -> R.string.pref_lyric_mode_merged_desc
-                                    AppPrefs.LYRIC_MODE_RAW -> R.string.pref_lyric_mode_raw_desc
-                                    AppPrefs.LYRIC_MODE_TRANSLATED -> R.string.pref_lyric_mode_translated_desc
-                                    else -> R.string.pref_lyric_mode_merged_desc
-                                }
-                            ),
+                            if (lyricApiBaseUrl.isNotBlank()) lyricApiBaseUrl else stringResource(R.string.pref_lyric_api_hint),
                             fontSize = 11.sp,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            color = if (lyricApiBaseUrl.isNotBlank()) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                 }
             }
 
-            item(key = "lyric_api", span = { GridItemSpan(maxLineSpan) }) {
+            // Auto embed lyrics switch (only visible when API URL is set)
+            item {
                 AnimatedVisibility(
-                    visible = enableLyric,
+                    visible = lyricApiBaseUrl.isNotBlank(),
                     enter = fadeIn(tween(300)) + expandVertically(tween(300)),
                     exit = fadeOut(tween(200)) + shrinkVertically(tween(200))
                 ) {
-                    OutlinedTextField(
-                        value = lyricApiBaseUrl,
-                        onValueChange = { lyricApiBaseUrl = it; AppPrefs.lyricApiBaseUrl = it },
-                        label = { Text(stringResource(R.string.pref_lyric_api)) },
-                        placeholder = { Text(stringResource(R.string.pref_lyric_api_hint)) },
-                        supportingText = { Text(stringResource(R.string.pref_lyric_api_support), fontSize = 11.sp) },
-                        singleLine = true,
-                        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri, imeAction = ImeAction.Done),
-                        keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() })
+                    SettingSwitch(
+                        title = stringResource(R.string.pref_auto_lyric),
+                        subtitle = stringResource(if (enableLyric) R.string.pref_auto_lyric_on else R.string.pref_auto_lyric_off),
+                        checked = enableLyric,
+                        onCheckedChange = { enableLyric = it; AppPrefs.enableLyric = it }
                     )
                 }
             }
 
+            // Original lyric switch (visible when lyric enabled)
+            item {
+                AnimatedVisibility(
+                    visible = lyricApiBaseUrl.isNotBlank() && enableLyric,
+                    enter = fadeIn(tween(300)) + expandVertically(tween(300)),
+                    exit = fadeOut(tween(200)) + shrinkVertically(tween(200))
+                ) {
+                    SettingSwitch(
+                        title = stringResource(R.string.pref_lyric_original),
+                        subtitle = stringResource(if (lyricEmbedOriginal) R.string.pref_lyric_original_on else R.string.pref_lyric_original_off),
+                        checked = lyricEmbedOriginal,
+                        onCheckedChange = { lyricEmbedOriginal = it; AppPrefs.lyricEmbedOriginal = it }
+                    )
+                }
+            }
+
+            // Translated lyric switch (visible when lyric enabled)
+            item {
+                AnimatedVisibility(
+                    visible = lyricApiBaseUrl.isNotBlank() && enableLyric,
+                    enter = fadeIn(tween(300)) + expandVertically(tween(300)),
+                    exit = fadeOut(tween(200)) + shrinkVertically(tween(200))
+                ) {
+                    val translatedSubtitle = if (lyricEmbedTranslated) {
+                        if (isSimplifiedChinese) {
+                            stringResource(R.string.pref_lyric_translated_on)
+                        } else {
+                            stringResource(R.string.pref_lyric_translated_on) + " " + stringResource(R.string.pref_lyric_translated_note)
+                        }
+                    } else {
+                        stringResource(R.string.pref_lyric_translated_off)
+                    }
+                    SettingSwitch(
+                        title = stringResource(R.string.pref_lyric_translated),
+                        subtitle = translatedSubtitle,
+                        checked = lyricEmbedTranslated,
+                        onCheckedChange = { lyricEmbedTranslated = it; AppPrefs.lyricEmbedTranslated = it }
+                    )
+                }
+            }
+
+            // Real IP (visible when lyric enabled)
             item(key = "lyric_ip", span = { GridItemSpan(maxLineSpan) }) {
                 AnimatedVisibility(
-                    visible = enableLyric,
+                    visible = lyricApiBaseUrl.isNotBlank() && enableLyric,
                     enter = fadeIn(tween(300)) + expandVertically(tween(300)),
                     exit = fadeOut(tween(200)) + shrinkVertically(tween(200))
                 ) {
@@ -533,6 +604,48 @@ fun SettingsScreen(onBack: () -> Unit) {
                 }
             }
         }
+    }
+
+    // API URL Dialog
+    if (showApiUrlDialog) {
+        AlertDialog(
+            onDismissRequest = { showApiUrlDialog = false },
+            title = { Text(stringResource(R.string.pref_lyric_api)) },
+            text = {
+                Column {
+                    OutlinedTextField(
+                        value = pendingApiUrl,
+                        onValueChange = { pendingApiUrl = it },
+                        label = { Text(stringResource(R.string.pref_lyric_api)) },
+                        placeholder = { Text(stringResource(R.string.pref_lyric_api_hint)) },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth(),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri, imeAction = ImeAction.Done),
+                        keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() })
+                    )
+                    Text(
+                        stringResource(R.string.pref_lyric_api_support),
+                        fontSize = 11.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(top = 8.dp)
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    lyricApiBaseUrl = pendingApiUrl.trim()
+                    AppPrefs.lyricApiBaseUrl = lyricApiBaseUrl
+                    showApiUrlDialog = false
+                }) {
+                    Text(stringResource(R.string.home_clear_confirm))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showApiUrlDialog = false }) {
+                    Text(stringResource(R.string.home_cancel))
+                }
+            }
+        )
     }
 
     if (showColumnsDialog) {
@@ -781,14 +894,6 @@ private fun RowScope.ThemeChip(label: String, selected: Boolean, isDark: Boolean
             selectedContainerColor = if (isDark) Color(0xFFD0BCFF) else Color(0xFF6750A4),
             selectedLabelColor = if (isDark) Color(0xFF381E72) else Color.White
         )
-    )
-}
-
-@Composable
-private fun LyricModeChip(label: String, selected: Boolean, onClick: () -> Unit) {
-    FilterChip(
-        selected = selected, onClick = onClick,
-        label = { Text(label, fontSize = 14.sp) }
     )
 }
 

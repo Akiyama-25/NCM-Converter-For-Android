@@ -8,7 +8,8 @@
 
 - 批量转换，无文件数量限制
 - 自动写入元数据（标题、艺术家、专辑、封面）
-- 自动搜索并嵌入歌词（原文 / 翻译 / 混合）
+- 自动搜索并嵌入歌词，支持原文与翻译独立开关控制
+- 系统文件夹选择器设置导出目录，使用 DocumentTree 持久化权限
 - 后台转换：开启自动保存后，转换在前台服务中进行，通知栏显示进度，切换应用不中断
 - Material You 动态取色（Android 12+）
 - 自定义强调色与背景色（HSL 滑条）
@@ -28,7 +29,7 @@
 - Kotlin + Jetpack Compose + Material 3
 - Retrofit2 + OkHttp4
 - AES-128-ECB / RC4 解密
-- MediaStore API
+- MediaStore API / DocumentFile
 
 ## 构建
 
@@ -43,8 +44,11 @@ cd NCM-Converter-For-Android
 歌词自动嵌入功能需要配合自建的网易云音乐 API 服务使用。
 
 1. 部署 [NeteaseCloudMusicApiEnhanced](https://github.com/neteasecloudmusicapienhanced/api-enhanced)
-2. 在 APP 设置中填入 API 地址
-3. 如需指定地区，可填入 Real IP 参数
+2. 在 APP 设置中通过对话框填入 API 地址，保存后才会显示歌词相关选项
+3. 歌词功能开启后，可独立控制是否嵌入「原文歌词」与「翻译歌词」
+4. 如需指定地区，可填入 Real IP 参数
+
+> 注：翻译歌词功能仅支持简体中文翻译结果。当 APP 语言不是简体中文时，翻译开关会显示相应提示。
 
 ## 参考项目
 

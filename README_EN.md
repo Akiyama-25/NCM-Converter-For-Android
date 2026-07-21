@@ -8,7 +8,8 @@ An Android app that decrypts NetEase Cloud Music's encrypted `.ncm` files into s
 
 - Batch conversion with no file limit
 - Automatic metadata writing (title, artist, album, cover art)
-- Automatic lyric search and embedding (original / translated / merged)
+- Automatic lyric search and embedding with independent original/translated switches
+- System folder picker for export directory with DocumentTree persistent permission
 - Background conversion: when auto-save is enabled, conversion runs in a foreground service with notification progress — switching apps won't interrupt it
 - Material You dynamic colors (Android 12+)
 - Custom accent and background colors via HSL sliders
@@ -28,7 +29,7 @@ An Android app that decrypts NetEase Cloud Music's encrypted `.ncm` files into s
 - Kotlin + Jetpack Compose + Material 3
 - Retrofit2 + OkHttp4
 - AES-128-ECB / RC4 decryption
-- MediaStore API
+- MediaStore API / DocumentFile
 
 ## Build
 
@@ -43,8 +44,11 @@ cd NCM-Converter-For-Android
 The automatic lyrics embedding feature requires a self-hosted NetEase Cloud Music API service.
 
 1. Deploy [NeteaseCloudMusicApiEnhanced](https://github.com/neteasecloudmusicapienhanced/api-enhanced)
-2. Enter the API address in the app settings
-3. To specify a region, you can provide a Real IP parameter
+2. Enter the API address via the dialog in app settings; lyric options will only appear after saving
+3. Once lyrics are enabled, you can independently control whether to embed "original lyrics" and "translated lyrics"
+4. To specify a region, you can provide a Real IP parameter
+
+> Note: The translated lyrics feature only supports Simplified Chinese translation results. When the app language is not Simplified Chinese, the translation switch will display a corresponding note.
 
 ## Reference Projects
 

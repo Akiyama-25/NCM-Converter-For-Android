@@ -100,6 +100,50 @@ fun HomeScreen(
                 )
             )
         },
+        bottomBar = {
+            AnimatedVisibility(
+                visible = files.isNotEmpty(),
+                enter = slideInVertically(initialOffsetY = { it }) + fadeIn(),
+                exit = slideOutVertically(targetOffsetY = { it }) + fadeOut()
+            ) {
+                Surface(
+                    modifier = Modifier
+                        .fillMaxWidth(),
+                    shadowElevation = 8.dp,
+                    color = MaterialTheme.colorScheme.surfaceVariant
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(10.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        OutlinedButton(
+                            onClick = { showClearDialog = true },
+                            modifier = Modifier.weight(1f),
+                            enabled = files.isNotEmpty()
+                        ) {
+                            Icon(Icons.Filled.DeleteForever, contentDescription = null, modifier = Modifier.size(18.dp))
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(stringResource(R.string.home_clear_list))
+                        }
+
+                        Button(
+                            onClick = { viewModel.decryptAll() },
+                            modifier = Modifier.weight(1f),
+                            enabled = !isProcessing && files.any {
+                                it.state == DecryptState.IDLE || it.state == DecryptState.FAILED
+                            },
+                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                        ) {
+                            Icon(Icons.Filled.PlayArrow, contentDescription = null, modifier = Modifier.size(18.dp))
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(stringResource(R.string.home_convert_all))
+                        }
+                    }
+                }
+            }
+        },
         containerColor = MaterialTheme.colorScheme.surface
     ) { padding ->
         Column(
@@ -243,50 +287,6 @@ fun HomeScreen(
                 }
             }
             } // AnimatedContent
-
-            AnimatedVisibility(
-                visible = files.isNotEmpty(),
-                enter = slideInVertically(initialOffsetY = { it }) + fadeIn(),
-                exit = slideOutVertically(targetOffsetY = { it }) + fadeOut()
-            ) {
-                Surface(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .navigationBarsPadding(),
-                    shadowElevation = 8.dp,
-                    color = MaterialTheme.colorScheme.surfaceVariant
-                ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(10.dp),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        OutlinedButton(
-                            onClick = { showClearDialog = true },
-                            modifier = Modifier.weight(1f),
-                            enabled = files.isNotEmpty()
-                        ) {
-                            Icon(Icons.Filled.DeleteForever, contentDescription = null, modifier = Modifier.size(18.dp))
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text(stringResource(R.string.home_clear_list))
-                        }
-
-                        Button(
-                            onClick = { viewModel.decryptAll() },
-                            modifier = Modifier.weight(1f),
-                            enabled = !isProcessing && files.any {
-                                it.state == DecryptState.IDLE || it.state == DecryptState.FAILED
-                            },
-                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
-                        ) {
-                            Icon(Icons.Filled.PlayArrow, contentDescription = null, modifier = Modifier.size(18.dp))
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text(stringResource(R.string.home_convert_all))
-                        }
-                    }
-                }
-            }
         }
     }
 

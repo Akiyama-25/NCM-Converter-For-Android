@@ -8,7 +8,8 @@ NetEase Cloud Music で暗号化された `.ncm` ファイルを標準的な MP3
 
 - ファイル数制限なしのバッチ変換
 - メタデータ自動書き込み（タイトル、アーティスト、アルバム、カバーアート）
-- 歌詞の自動検索・埋め込み（原文 / 翻訳 / 混合）
+- 歌詞の自動検索・埋め込み、原文と翻訳を独立したスイッチで制御
+- システムフォルダ選択器による出力先設定、DocumentTree 永続権限対応
 - バックグラウンド変換：自動保存を有効にすると、フォアグラウンドサービスで変換を実行し、通知バーに進捗を表示。アプリ切り替えしても中断しません
 - Material You ダイナミックカラー（Android 12+）
 - HSL スライダーによるアクセントカラー・背景色のカスタマイズ
@@ -28,7 +29,7 @@ NetEase Cloud Music で暗号化された `.ncm` ファイルを標準的な MP3
 - Kotlin + Jetpack Compose + Material 3
 - Retrofit2 + OkHttp4
 - AES-128-ECB / RC4 復号
-- MediaStore API
+- MediaStore API / DocumentFile
 
 ## ビルド方法
 
@@ -43,8 +44,11 @@ cd NCM-Converter-For-Android
 歌詞自動埋め込み機能を利用するには、自前で構築した NetEase Cloud Music API サービスが必要です。
 
 1. [NeteaseCloudMusicApiEnhanced](https://github.com/neteasecloudmusicapienhanced/api-enhanced) をデプロイする
-2. アプリの設定画面に API アドレスを入力する
-3. 地域を指定する必要がある場合は、Real IP パラメータを入力する
+2. アプリの設定画面でダイアログから API アドレスを入力し、保存後に歌詞関連オプションが表示される
+3. 歌詞機能を有効にすると、「原文歌詞」と「翻訳歌詞」の埋め込みを独立して制御可能
+4. 地域を指定する必要がある場合は、Real IP パラメータを入力する
+
+> 注：翻訳歌詞機能は簡体中国語の翻訳結果のみ対応しています。アプリの言語が簡体中国語以外の場合、翻訳スイッチに対応する注記が表示されます。
 
 ## 参考プロジェクト
 

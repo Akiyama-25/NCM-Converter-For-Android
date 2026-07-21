@@ -1,11 +1,13 @@
 package com.example.ncmconverter
 
 import android.graphics.drawable.ColorDrawable
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import androidx.activity.compose.PredictiveBackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.foundation.layout.Box
 import androidx.compose.runtime.*
@@ -14,10 +16,29 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.core.content.ContextCompat
 import com.example.ncmconverter.ui.SettingsScreen
 import com.example.ncmconverter.ui.theme.NcmConverterTheme
+import com.example.ncmconverter.util.AppPrefs
 
 class SettingsActivity : AppCompatActivity() {
+
+    private lateinit var openDocumentTreeLauncher: androidx.activity.result.ActivityResultLauncher<Uri?>
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        // Register the document-tree picker launcher
+        openDocumentTreeLauncher = registerForActivityResult(
+            ActivityResultContracts.OpenDocumentTree()
+        ) { uri ->
+            if (uri != null) {
+                // Persist the permission so the URI remains valid after app restart
+                contentResolver.takePersistableUriPermission(
+                    uri,
+                    android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION or
+                    android.content.Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+                )
+                AppPrefs.customOutputUri = uri.toString()
+            }
+        }
 
         enableEdgeToEdge()
         window.setBackgroundDrawable(ColorDrawable(
@@ -45,7 +66,12 @@ class SettingsActivity : AppCompatActivity() {
                         translationX = size.width * backProgress * 0.3f
                     }
                 ) {
-                    SettingsScreen(onBack = { finish() })
+                    SettingsScreen(
+                        onBack = { finish() },
+                        onPickOutputFolder = {
+                            openDocumentTreeLauncher.launch(null)
+                        }
+                    )
                 }
             }
         }

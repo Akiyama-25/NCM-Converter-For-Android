@@ -4,7 +4,9 @@ import android.content.ContentValues
 import android.content.Context
 import android.net.Uri
 import android.os.Build
+import android.provider.DocumentsContract
 import android.provider.MediaStore
+import androidx.documentfile.provider.DocumentFile
 import com.example.ncmconverter.decrypt.model.DecryptResult
 import com.example.ncmconverter.metadata.FlacMetadataWriter
 import com.example.ncmconverter.metadata.Mp3MetadataWriter
@@ -41,6 +43,64 @@ object FileUtils {
     }
 
     suspend fun saveToCustomPath(
+        context: Context,
+        result: DecryptResult,
+        relativePath: String,
+        metadataWriter: suspend (ByteArray) -> ByteArray
+    ): Uri? = withContext(Dispatchers.IO) {
+        val outputUri = AppPrefs.customOutputUri
+        if (outputUri.isNotBlank()) {
+            saveToTreeUri(context, result, Uri.parse(outputUri), metadataWriter)
+        } else {
+            saveToMediaStore(context, result, relativePath, metadataWriter)
+        }
+    }
+
+    private suspend fun saveToTreeUri(
+        context: Context,
+        result: DecryptResult,
+        treeUri: Uri,
+        metadataWriter: suspend (ByteArray) -> ByteArray
+    ): Uri? = withContext(Dispatchers.IO) {
+        try {
+            val displayName = buildDisplayName(result) + "." + result.extension
+            val docFile = DocumentFile.fromTreeUri(context, treeUri) ?: return@withContext null
+            val existing = docFile.findFile(displayName)
+            existing?.delete()
+            val newFile = docFile.createFile(result.mimeType, displayName) ?: return@withContext null
+
+            context.contentResolver.openOutputStream(newFile.uri)?.use { output ->
+                if (result.isFileBased && result.tempAudioFile != null) {
+                    if (result.extension == "flac") {
+                        writeFlacMetadataHeader(output, result)
+                        result.tempAudioFile.inputStream().use { input ->
+                            input.skip(42)
+                            input.copyTo(output, bufferSize = 64 * 1024)
+                        }
+                    } else {
+                        writeMp3MetadataHeader(output, result)
+                        result.tempAudioFile.inputStream().use { input ->
+                            input.copyTo(output, bufferSize = 64 * 1024)
+                        }
+                    }
+                } else {
+                    val audioBytes = result.audioData ?: return@withContext null
+                    val taggedAudio = metadataWriter(audioBytes)
+                    output.write(taggedAudio)
+                }
+            } ?: run {
+                return@withContext null
+            }
+
+            // Verify by checking file size
+            val freshDoc = DocumentFile.fromSingleUri(context, newFile.uri)
+            if (freshDoc != null && freshDoc.length() > 0) newFile.uri else null
+        } catch (e: Exception) {
+            null
+        }
+    }
+
+    private suspend fun saveToMediaStore(
         context: Context,
         result: DecryptResult,
         relativePath: String,

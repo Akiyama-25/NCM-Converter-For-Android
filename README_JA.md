@@ -14,10 +14,21 @@ NetEase Cloud Music で暗号化された `.ncm` ファイルを標準的な MP3
 - Material You ダイナミックカラー（Android 12+）
 - HSL スライダーによるアクセントカラー・背景色のカスタマイズ
 - マルチカラムグリッドレイアウト、折りたたみ端末・タブレット対応
+- 内蔵 Resource Han Round SC フォント、6 段階のフォントウェイトのカスタマイズに対応
 - 予測型バックジェスチャー対応（Android 16+）
 - ダブルタップで終了
 - プロセス異常終了後のファイルリスト自動復元
 - 多言語対応：簡体字中国語、繁体字中国語、English、日本語
+
+<p align="center">
+  <img src="docs/screenshots/screenshot_1.jpg" alt="Screenshot 1" width="30%" />
+  <img src="docs/screenshots/screenshot_2.jpg" alt="Screenshot 2" width="30%" />
+  <img src="docs/screenshots/screenshot_3.jpg" alt="Screenshot 3" width="30%" />
+  <br><br>
+  <img src="docs/screenshots/screenshot_4.jpg" alt="Screenshot 4" width="30%" />
+  <img src="docs/screenshots/screenshot_5.png" alt="Screenshot 5" width="30%" />
+  <img src="docs/screenshots/screenshot_6.png" alt="Screenshot 6" width="30%" />
+</p>
 
 ## 動作要件
 

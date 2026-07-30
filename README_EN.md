@@ -14,10 +14,21 @@ An Android app that decrypts NetEase Cloud Music's encrypted `.ncm` files into s
 - Material You dynamic colors (Android 12+)
 - Custom accent and background colors via HSL sliders
 - Multi-column grid layout, optimized for foldables and tablets
+- Built-in Resource Han Round SC font with 6 customizable font weight levels
 - Predictive back gesture support (Android 16+)
 - Double-tap back to exit
 - Automatic file list recovery after unexpected process death
 - Multi-language support: Simplified Chinese, Traditional Chinese, English, Japanese
+
+<p align="center">
+  <img src="docs/screenshots/screenshot_1.jpg" alt="Screenshot 1" width="30%" />
+  <img src="docs/screenshots/screenshot_2.jpg" alt="Screenshot 2" width="30%" />
+  <img src="docs/screenshots/screenshot_3.jpg" alt="Screenshot 3" width="30%" />
+  <br><br>
+  <img src="docs/screenshots/screenshot_4.jpg" alt="Screenshot 4" width="30%" />
+  <img src="docs/screenshots/screenshot_5.png" alt="Screenshot 5" width="30%" />
+  <img src="docs/screenshots/screenshot_6.png" alt="Screenshot 6" width="30%" />
+</p>
 
 ## Requirements
 

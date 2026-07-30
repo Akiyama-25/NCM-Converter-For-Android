@@ -17,6 +17,7 @@
     <string name="home_clear_dialog_msg">确定要清空当前列表中的所有文件吗？\n\n此操作将移除所有已添加的文件（包括已转换的结果）并释放缓存。</string>
     <string name="home_clear_confirm">确定清空</string>
     <string name="home_cancel">取消</string>
+    <string name="dialog_confirm">确定</string>
 
     <!-- FileItemView -->
     <string name="file_wait">等待转换</string>

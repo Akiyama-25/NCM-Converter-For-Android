@@ -17,6 +17,7 @@
     <string name="home_clear_dialog_msg">Are you sure you want to clear all files?\n\nThis will remove all added files (including converted results) and free memory.</string>
     <string name="home_clear_confirm">Clear</string>
     <string name="home_cancel">Cancel</string>
+    <string name="dialog_confirm">OK</string>
 
     <!-- FileItemView -->
     <string name="file_wait">Waiting</string>

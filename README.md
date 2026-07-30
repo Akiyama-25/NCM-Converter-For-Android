@@ -14,10 +14,21 @@
 - Material You 动态取色（Android 12+）
 - 自定义强调色与背景色（HSL 滑条）
 - 多列网格布局，适配折叠屏与平板
+- 内嵌 Resource Han Round SC 字体，支持 6 档字重自定义调节
 - 预测性返回手势支持（Android 16+）
 - 双击返回键退出
 - 进程意外终止后自动恢复文件列表
 - 多语言支持：简体中文、繁体中文、English、日本語
+
+<p align="center">
+  <img src="docs/screenshots/screenshot_1.jpg" alt="Screenshot 1" width="30%" />
+  <img src="docs/screenshots/screenshot_2.jpg" alt="Screenshot 2" width="30%" />
+  <img src="docs/screenshots/screenshot_3.jpg" alt="Screenshot 3" width="30%" />
+  <br><br>
+  <img src="docs/screenshots/screenshot_4.jpg" alt="Screenshot 4" width="30%" />
+  <img src="docs/screenshots/screenshot_5.png" alt="Screenshot 5" width="30%" />
+  <img src="docs/screenshots/screenshot_6.png" alt="Screenshot 6" width="30%" />
+</p>
 
 ## 系统要求
 

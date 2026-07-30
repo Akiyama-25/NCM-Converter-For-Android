@@ -17,6 +17,7 @@
     <string name="home_clear_dialog_msg">すべてのファイルをクリアしますか？\n\n追加されたすべてのファイル（変換結果を含む）が削除され、メモリが解放されます。</string>
     <string name="home_clear_confirm">クリア</string>
     <string name="home_cancel">キャンセル</string>
+    <string name="dialog_confirm">OK</string>
 
     <!-- FileItemView -->
     <string name="file_wait">待機中</string>

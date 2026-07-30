@@ -42,11 +42,12 @@ fun HomeScreen(
     val files by viewModel.files.collectAsState()
     val isProcessing by viewModel.isProcessing.collectAsState()
     val gridColumns by AppPrefs.gridColumnsFlow.collectAsState()
+    val portraitGridEnabled by AppPrefs.portraitGridEnabledFlow.collectAsState()
     val activity = LocalContext.current as Activity
 
     val effectiveColumns = if (gridColumns <= 1) 1
         else when (calculateWindowSizeClass(activity).widthSizeClass) {
-            WindowWidthSizeClass.Compact -> 1
+            WindowWidthSizeClass.Compact -> if (portraitGridEnabled) gridColumns else 1
             else -> gridColumns
         }
 

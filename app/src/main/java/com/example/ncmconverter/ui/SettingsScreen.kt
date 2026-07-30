@@ -290,8 +290,8 @@ fun SettingsScreen(onBack: () -> Unit, onPickOutputFolder: () -> Unit = {}) {
                     enter = fadeIn(tween(300)) + expandVertically(tween(300)),
                     exit = fadeOut(tween(200)) + shrinkVertically(tween(200))
                 ) {
-                    val weightIndex = AppFontWeights.indexOfFirst { it.first.weight == fontWeight }
-                        .coerceAtLeast(2)
+                    val rawIndex = AppFontWeights.indexOfFirst { it.first.weight == fontWeight }
+                    val weightIndex = if (rawIndex >= 0) rawIndex else 2
                     Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp)) {
                         Slider(
                             value = weightIndex.toFloat(),
@@ -637,7 +637,7 @@ fun SettingsScreen(onBack: () -> Unit, onPickOutputFolder: () -> Unit = {}) {
                     AppPrefs.lyricApiBaseUrl = lyricApiBaseUrl
                     showApiUrlDialog = false
                 }) {
-                    Text(stringResource(R.string.home_clear_confirm))
+                    Text(stringResource(R.string.dialog_confirm))
                 }
             },
             dismissButton = {
@@ -660,7 +660,7 @@ fun SettingsScreen(onBack: () -> Unit, onPickOutputFolder: () -> Unit = {}) {
                 TextButton(onClick = {
                     showColumnsDialog = false
                     AppPrefs.gridColumns = 1
-                }) { Text(stringResource(R.string.home_clear_confirm)) }
+                }) { Text(stringResource(R.string.dialog_confirm)) }
             },
             dismissButton = {
                 TextButton(onClick = {

@@ -103,6 +103,11 @@ class MainActivity : AppCompatActivity() {
             startForegroundService(Intent(this, DecryptService::class.java))
         }
 
+        // 仅在 APP 启动时提示一次歌词 API 未配置
+        if (savedInstanceState == null && AppPrefs.enableLyric && AppPrefs.lyricApiBaseUrl.isBlank()) {
+            Toast.makeText(this, R.string.lyric_api_not_configured_hint, Toast.LENGTH_LONG).show()
+        }
+
         enableEdgeToEdge()
         window.setBackgroundDrawable(ColorDrawable(
             ContextCompat.getColor(this, R.color.window_bg)

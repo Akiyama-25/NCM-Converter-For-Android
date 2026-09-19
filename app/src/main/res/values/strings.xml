@@ -150,4 +150,21 @@
 
     <!-- FileUtils -->
     <string name="fileutils_open_failed">Unable to open file</string>
+
+    <!-- Debug & Logs -->
+    <string name="section_debug">Debug</string>
+    <string name="pref_log">Logs</string>
+    <string name="pref_log_desc">View and export runtime logs</string>
+    <string name="pref_log_level">Log Level</string>
+    <string name="pref_log_format">Log Format</string>
+    <string name="log_dialog_title">Runtime Logs</string>
+    <string name="log_empty">No logs available</string>
+    <string name="log_copied">Logs copied to clipboard</string>
+    <string name="log_share_title">Export Log</string>
+    <string name="log_export_failed">Export failed: %1$s</string>
+    <string name="log_action_copy">Copy</string>
+    <string name="log_action_export">Export</string>
+    <string name="log_action_clear">Clear</string>
+    <string name="log_clear_confirm">Logs cleared</string>
+    <string name="lyric_api_not_configured_hint">Lyric API URL is not set. Fetching lyrics skipped (configure in Settings).</string>
 </resources>

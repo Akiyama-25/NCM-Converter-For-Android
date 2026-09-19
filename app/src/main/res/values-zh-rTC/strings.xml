@@ -150,4 +150,21 @@
 
     <!-- FileUtils -->
     <string name="fileutils_open_failed">無法開啟檔案</string>
+
+    <!-- Debug & Logs -->
+    <string name="section_debug">調試</string>
+    <string name="pref_log">日誌</string>
+    <string name="pref_log_desc">檢視並導出應用運行與錯誤日誌</string>
+    <string name="pref_log_level">日誌級別</string>
+    <string name="pref_log_format">日誌格式</string>
+    <string name="log_dialog_title">運行日誌</string>
+    <string name="log_empty">暫無可用日誌</string>
+    <string name="log_copied">日誌已複製到剪貼簿</string>
+    <string name="log_share_title">導出日誌</string>
+    <string name="log_export_failed">導出失敗: %1$s</string>
+    <string name="log_action_copy">複製</string>
+    <string name="log_action_export">導出</string>
+    <string name="log_action_clear">清空</string>
+    <string name="log_clear_confirm">日誌已清空</string>
+    <string name="lyric_api_not_configured_hint">歌詞 API 地址未設定，已略過歌詞獲取。可在設定中配置。</string>
 </resources>

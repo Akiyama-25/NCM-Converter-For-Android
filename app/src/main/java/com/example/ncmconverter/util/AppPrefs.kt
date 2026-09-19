@@ -35,9 +35,21 @@ object AppPrefs {
     private const val KEY_USE_EMBEDDED_FONT = "use_embedded_font"
     private const val KEY_FONT_WEIGHT = "font_weight"
     private const val KEY_CUSTOM_OUTPUT_URI = "custom_output_uri"
+    private const val KEY_LOG_LEVEL = "log_level"
+    private const val KEY_LOG_FORMAT = "log_format"
     const val THEME_SYSTEM = "system"
     const val THEME_LIGHT = "light"
     const val THEME_DARK = "dark"
+
+    const val LOG_LEVEL_VERBOSE = "VERBOSE"
+    const val LOG_LEVEL_DEBUG = "DEBUG"
+    const val LOG_LEVEL_INFO = "INFO"
+    const val LOG_LEVEL_WARN = "WARN"
+    const val LOG_LEVEL_ERROR = "ERROR"
+
+    const val LOG_FORMAT_LOG = "log"
+    const val LOG_FORMAT_TXT = "txt"
+    const val LOG_FORMAT_MD = "md"
 
     const val LYRIC_MODE_MERGED = "merged"
     const val LYRIC_MODE_RAW = "raw"
@@ -94,6 +106,12 @@ object AppPrefs {
     private val _fontWeightFlow = MutableStateFlow(400)
     val fontWeightFlow: StateFlow<Int> = _fontWeightFlow.asStateFlow()
 
+    private val _logLevelFlow = MutableStateFlow(LOG_LEVEL_DEBUG)
+    val logLevelFlow: StateFlow<String> = _logLevelFlow.asStateFlow()
+
+    private val _logFormatFlow = MutableStateFlow(LOG_FORMAT_LOG)
+    val logFormatFlow: StateFlow<String> = _logFormatFlow.asStateFlow()
+
     fun init(context: Context) {
         prefs = context.getSharedPreferences(NAME, Context.MODE_PRIVATE)
         _themeFlow.value = themeMode
@@ -111,6 +129,8 @@ object AppPrefs {
         _portraitGridEnabledFlow.value = portraitGridEnabled
         _useEmbeddedFontFlow.value = useEmbeddedFont
         _fontWeightFlow.value = fontWeight
+        _logLevelFlow.value = logLevel
+        _logFormatFlow.value = logFormat
         // Migrate old lyricMode to new booleans if needed
         migrateLyricMode()
     }
@@ -275,6 +295,20 @@ object AppPrefs {
     var appLanguage: String
         get() = prefs.getString(KEY_APP_LANGUAGE, "system") ?: "system"
         set(value) = prefs.edit().putString(KEY_APP_LANGUAGE, value).apply()
+
+    var logLevel: String
+        get() = prefs.getString(KEY_LOG_LEVEL, LOG_LEVEL_DEBUG) ?: LOG_LEVEL_DEBUG
+        set(value) {
+            prefs.edit().putString(KEY_LOG_LEVEL, value).apply()
+            _logLevelFlow.value = value
+        }
+
+    var logFormat: String
+        get() = prefs.getString(KEY_LOG_FORMAT, LOG_FORMAT_LOG) ?: LOG_FORMAT_LOG
+        set(value) {
+            prefs.edit().putString(KEY_LOG_FORMAT, value).apply()
+            _logFormatFlow.value = value
+        }
 
     fun updateAccentColor(argb: Long, h: Float, s: Float, l: Float) {
         prefs.edit()

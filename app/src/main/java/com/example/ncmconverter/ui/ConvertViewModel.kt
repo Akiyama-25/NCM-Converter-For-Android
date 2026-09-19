@@ -22,6 +22,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
 
 data class FileItem(
@@ -41,6 +43,7 @@ class ConvertViewModel(application: Application) : AndroidViewModel(application)
         var instance: ConvertViewModel? = null
             private set
         private const val STREAMING_THRESHOLD = 30L * 1024 * 1024
+        private const val MAX_CONCURRENT_DECRYPTS = 2
         private const val TAG = "ConvertViewModel"
     }
 
@@ -56,12 +59,21 @@ class ConvertViewModel(application: Application) : AndroidViewModel(application)
     private var nextId = 0L
     internal var pendingSingleId: Long? = null
 
+    private val decryptSemaphore = Semaphore(MAX_CONCURRENT_DECRYPTS)
+
     init {
         instance = this
+        viewModelScope.launch(Dispatchers.IO) {
+            sweepOrphanedTempFiles()
+        }
     }
 
     override fun onCleared() {
         super.onCleared()
+        // 清理列表中仍持有的 temp file
+        _files.value.forEach { deleteTempFile(it) }
+        // 兜底：扫描 tmpdir 下所有 ncm_decrypt_*.tmp 孤儿文件
+        sweepOrphanedTempFiles()
         if (instance === this) instance = null
     }
 
@@ -78,10 +90,12 @@ class ConvertViewModel(application: Application) : AndroidViewModel(application)
     }
 
     fun removeFile(id: Long) {
+        _files.value.find { it.id == id }?.let { deleteTempFile(it) }
         _files.value = _files.value.filter { it.id != id }
     }
 
     fun clearAll() {
+        _files.value.forEach { deleteTempFile(it) }
         _files.value = emptyList()
     }
 
@@ -104,7 +118,9 @@ class ConvertViewModel(application: Application) : AndroidViewModel(application)
             }
             if (pending.isEmpty()) { _isProcessing.value = false; return }
             for (file in pending) {
-                viewModelScope.launch { convertDirect(file) }
+                viewModelScope.launch {
+                    decryptSemaphore.withPermit { convertDirect(file, forceStreaming = true) }
+                }
             }
         }
     }
@@ -127,13 +143,14 @@ class ConvertViewModel(application: Application) : AndroidViewModel(application)
         }
     }
 
-    private suspend fun convertDirect(file: FileItem) {
+    private suspend fun convertDirect(file: FileItem, forceStreaming: Boolean = false) {
         val cr = getApplication<Application>().contentResolver
         updateFileState(file.id, DecryptState.PARSING)
 
         try {
             val decryptor = NcmDecryptor()
-            val result = if (file.size == 0L || file.size >= STREAMING_THRESHOLD) {
+            val useStreaming = forceStreaming || file.size == 0L || file.size >= STREAMING_THRESHOLD
+            val result = if (useStreaming) {
                 val stream = withContext(Dispatchers.IO) {
                     cr.openInputStream(file.uri) ?: throw IllegalArgumentException("Cannot open file")
                 }
@@ -166,8 +183,9 @@ class ConvertViewModel(application: Application) : AndroidViewModel(application)
     }
 
     private suspend fun fetchLyric(result: DecryptResult): DecryptResult {
+        val baseUrl = AppPrefs.lyricApiBaseUrl
+        if (baseUrl.isBlank()) return result
         return try {
-            val baseUrl = AppPrefs.lyricApiBaseUrl
             val realIP = AppPrefs.lyricRealIP.takeIf { it.isNotBlank() }
             val api = RetrofitClient.getService(baseUrl)
             val matcher = LyricMatcher(api, realIP = realIP)
@@ -203,6 +221,7 @@ class ConvertViewModel(application: Application) : AndroidViewModel(application)
     }
 
     fun clearResult(id: Long) {
+        _files.value.find { it.id == id }?.let { deleteTempFile(it) }
         _files.value = _files.value.map { file ->
             if (file.id == id) file.copy(result = null) else file
         }
@@ -225,6 +244,33 @@ class ConvertViewModel(application: Application) : AndroidViewModel(application)
             it.state == DecryptState.FAILED
         }) {
             _isProcessing.value = false
+        }
+    }
+
+    /** 删除单个 FileItem 关联的 temp file */
+    private fun deleteTempFile(item: FileItem) {
+        try {
+            item.result?.tempAudioFile?.let { file ->
+                if (file.exists()) file.delete()
+            }
+        } catch (e: Exception) {
+            Log.w(TAG, "Failed to delete temp file for ${item.name}", e)
+        }
+    }
+
+    /** 兜底：扫描 tmpdir 下所有 ncm_decrypt_*.tmp 孤儿文件并删除 */
+    private fun sweepOrphanedTempFiles() {
+        try {
+            val tmpDir = getApplication<Application>().cacheDir
+            tmpDir.listFiles { file ->
+                file.name.startsWith("ncm_decrypt_") && file.name.endsWith(".tmp")
+            }?.forEach { file ->
+                try {
+                    file.delete()
+                } catch (_: Exception) { /* ignore individual failures */ }
+            }
+        } catch (e: Exception) {
+            Log.w(TAG, "Failed to sweep orphaned temp files", e)
         }
     }
 }

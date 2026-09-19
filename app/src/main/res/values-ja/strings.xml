@@ -150,4 +150,21 @@
 
     <!-- FileUtils -->
     <string name="fileutils_open_failed">ファイルを開けません</string>
+
+    <!-- Debug & Logs -->
+    <string name="section_debug">デバッグ</string>
+    <string name="pref_log">ログ</string>
+    <string name="pref_log_desc">実行ログとエラーログを表示・エクスポート</string>
+    <string name="pref_log_level">ログレベル</string>
+    <string name="pref_log_format">ログ形式</string>
+    <string name="log_dialog_title">実行ログ</string>
+    <string name="log_empty">利用可能なログはありません</string>
+    <string name="log_copied">ログをクリップボードにコピーしました</string>
+    <string name="log_share_title">ログをエクスポート</string>
+    <string name="log_export_failed">エクスポートに失敗しました: %1$s</string>
+    <string name="log_action_copy">コピー</string>
+    <string name="log_action_export">エクスポート</string>
+    <string name="log_action_clear">クリア</string>
+    <string name="log_clear_confirm">ログをクリアしました</string>
+    <string name="lyric_api_not_configured_hint">歌詞APIアドレスが未設定のため、取得をスキップしました（設定で構成可能）。</string>
 </resources>

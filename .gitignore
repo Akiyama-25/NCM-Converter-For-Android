@@ -92,3 +92,11 @@ task.md
 *.tar.gz
 *.zip
 *.7z
+
+# Agent Memory Files
+CLAUDE.md
+GEMINI.md
+STATUS.md
+PROJECT.md
+Lyric.md
+task.md

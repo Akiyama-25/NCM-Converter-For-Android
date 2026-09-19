@@ -3,6 +3,7 @@ package com.example.ncmconverter.ui
 import android.app.Activity
 import android.content.res.Configuration
 import android.os.Build
+import android.widget.Toast
 import androidx.annotation.StringRes
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
@@ -21,19 +22,27 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.BugReport
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.ContentCopy
+import androidx.compose.material.icons.filled.DeleteOutline
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.FolderOpen
 import androidx.compose.material.icons.filled.Info
-import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.*
 import androidx.compose.material3.windowsizeclass.ExperimentalMaterial3WindowSizeClassApi
 import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.compose.material3.windowsizeclass.calculateWindowSizeClass
 import androidx.compose.runtime.*
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import com.example.ncmconverter.util.AppLogger
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -147,6 +156,20 @@ fun SettingsScreen(onBack: () -> Unit, onPickOutputFolder: () -> Unit = {}) {
     // API URL dialog state
     var showApiUrlDialog by remember { mutableStateOf(false) }
     var pendingApiUrl by remember { mutableStateOf(lyricApiBaseUrl) }
+
+    // Debug & Logs state
+    var logLevel by remember { mutableStateOf(AppPrefs.logLevel) }
+    var logFormat by remember { mutableStateOf(AppPrefs.logFormat) }
+    var showLogDialog by remember { mutableStateOf(false) }
+    var logText by remember { mutableStateOf("") }
+
+    LaunchedEffect(showLogDialog, logLevel, logFormat) {
+        if (showLogDialog) {
+            withContext(Dispatchers.IO) {
+                logText = AppLogger.getLogContent(context, logLevel, logFormat)
+            }
+        }
+    }
 
     // Determine output folder display name
     val outputFolderName = remember(AppPrefs.customOutputUri) {
@@ -554,6 +577,55 @@ fun SettingsScreen(onBack: () -> Unit, onPickOutputFolder: () -> Unit = {}) {
                 }
             }
 
+            // ── Debug ──
+            item(span = { GridItemSpan(maxLineSpan) }) { HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp)) }
+            item(span = { GridItemSpan(maxLineSpan) }) { SectionHeader(stringResource(R.string.section_debug)) }
+
+            // 日志查看与导出
+            item(span = { GridItemSpan(maxLineSpan) }) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { showLogDialog = true }
+                        .padding(horizontal = 16.dp, vertical = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        Icons.Filled.BugReport,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(20.dp)
+                    )
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(stringResource(R.string.pref_log), fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurface)
+                        Text(stringResource(R.string.pref_log_desc), fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                }
+            }
+
+            // 日志级别
+            item {
+                Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp)) {
+                    Text(stringResource(R.string.pref_log_level), fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    LogLevelDropdown(logLevel) { level ->
+                        logLevel = level
+                        AppPrefs.logLevel = level
+                    }
+                }
+            }
+
+            // 日志格式
+            item {
+                Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp)) {
+                    Text(stringResource(R.string.pref_log_format), fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    LogFormatDropdown(logFormat) { format ->
+                        logFormat = format
+                        AppPrefs.logFormat = format
+                    }
+                }
+            }
+
             // ── About ──
             item(span = { GridItemSpan(maxLineSpan) }) { HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp)) }
             item(span = { GridItemSpan(maxLineSpan) }) { SectionHeader(stringResource(R.string.section_about)) }
@@ -803,6 +875,100 @@ fun SettingsScreen(onBack: () -> Unit, onPickOutputFolder: () -> Unit = {}) {
                 Spacer(modifier = Modifier.height(32.dp))
             }
         }
+    }
+
+    if (showLogDialog) {
+        AlertDialog(
+            onDismissRequest = { showLogDialog = false },
+            title = {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(stringResource(R.string.log_dialog_title), fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
+                    Text("($logLevel · .$logFormat)", fontSize = 12.sp, color = MaterialTheme.colorScheme.primary)
+                }
+            },
+            text = {
+                Column(modifier = Modifier.fillMaxWidth().heightIn(min = 200.dp, max = 450.dp)) {
+                    Surface(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .weight(1f),
+                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                        shape = RoundedCornerShape(8.dp)
+                    ) {
+                        SelectionContainer {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .verticalScroll(rememberScrollState())
+                                    .padding(8.dp)
+                            ) {
+                                Text(
+                                    text = logText,
+                                    fontSize = 11.sp,
+                                    fontFamily = FontFamily.Monospace,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        OutlinedButton(
+                            onClick = {
+                                AppLogger.clearLogs()
+                                logText = AppLogger.getLogContent(context, logLevel, logFormat)
+                                Toast.makeText(context, context.getString(R.string.log_clear_confirm), Toast.LENGTH_SHORT).show()
+                            },
+                            modifier = Modifier.weight(1f),
+                            contentPadding = PaddingValues(horizontal = 4.dp, vertical = 8.dp)
+                        ) {
+                            Icon(Icons.Filled.DeleteOutline, contentDescription = null, modifier = Modifier.size(16.dp))
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(stringResource(R.string.log_action_clear), fontSize = 12.sp)
+                        }
+
+                        OutlinedButton(
+                            onClick = {
+                                AppLogger.copyToClipboard(context, logLevel, logFormat)
+                            },
+                            modifier = Modifier.weight(1f),
+                            contentPadding = PaddingValues(horizontal = 4.dp, vertical = 8.dp)
+                        ) {
+                            Icon(Icons.Filled.ContentCopy, contentDescription = null, modifier = Modifier.size(16.dp))
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(stringResource(R.string.log_action_copy), fontSize = 12.sp)
+                        }
+
+                        Button(
+                            onClick = {
+                                AppLogger.exportAndShare(context, logLevel, logFormat)
+                            },
+                            modifier = Modifier.weight(1f),
+                            contentPadding = PaddingValues(horizontal = 4.dp, vertical = 8.dp)
+                        ) {
+                            Icon(Icons.Filled.Share, contentDescription = null, modifier = Modifier.size(16.dp))
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(stringResource(R.string.log_action_export), fontSize = 12.sp)
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showLogDialog = false }) {
+                    Text(stringResource(R.string.instructions_close))
+                }
+            }
+        )
     }
 }
 
@@ -1068,3 +1234,91 @@ private fun hueGradientColors(): List<Color> {
         hslToColor(h = i * 360f / steps, s = 100f, l = 50f)
     }
 }
+
+@Composable
+private fun LogLevelDropdown(currentLevel: String, onSelect: (String) -> Unit) {
+    var expanded by remember { mutableStateOf(false) }
+    val options = listOf(
+        "VERBOSE",
+        "DEBUG",
+        "INFO",
+        "WARN",
+        "ERROR"
+    )
+
+    Box {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable { expanded = true }
+                .padding(horizontal = 16.dp, vertical = 10.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(currentLevel, fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurface)
+            Icon(
+                Icons.Filled.ArrowDropDown,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+        DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+            options.forEach { level ->
+                DropdownMenuItem(
+                    text = { Text(level) },
+                    onClick = {
+                        onSelect(level)
+                        expanded = false
+                    },
+                    trailingIcon = if (level == currentLevel) {
+                        { Icon(Icons.Default.Check, contentDescription = null) }
+                    } else null
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun LogFormatDropdown(currentFormat: String, onSelect: (String) -> Unit) {
+    var expanded by remember { mutableStateOf(false) }
+    val options = listOf(
+        "log" to ".log (默认)",
+        "txt" to ".txt",
+        "md" to ".md"
+    )
+    val currentLabel = options.firstOrNull { it.first.equals(currentFormat, ignoreCase = true) }?.second ?: ".$currentFormat"
+
+    Box {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable { expanded = true }
+                .padding(horizontal = 16.dp, vertical = 10.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(currentLabel, fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurface)
+            Icon(
+                Icons.Filled.ArrowDropDown,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+        DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+            options.forEach { (format, label) ->
+                DropdownMenuItem(
+                    text = { Text(label) },
+                    onClick = {
+                        onSelect(format)
+                        expanded = false
+                    },
+                    trailingIcon = if (format.equals(currentFormat, ignoreCase = true)) {
+                        { Icon(Icons.Default.Check, contentDescription = null) }
+                    } else null
+                )
+            }
+        }
+    }
+}
+

@@ -16,8 +16,6 @@ object AppPrefs {
     private const val KEY_LYRIC_MODE = "lyric_mode"
     private const val KEY_LYRIC_EMBED_ORIGINAL = "lyric_embed_original"
     private const val KEY_LYRIC_EMBED_TRANSLATED = "lyric_embed_translated"
-    private const val KEY_LYRIC_API_BASE_URL = "lyric_api_base_url"
-    private const val KEY_LYRIC_REAL_IP = "lyric_real_ip"
     private const val KEY_ENABLE_COVER = "enable_cover"
     private const val KEY_USE_MONET_COLORS = "use_monet_colors"
     private const val KEY_CUSTOM_ACCENT_COLOR = "custom_accent_color"
@@ -181,14 +179,6 @@ object AppPrefs {
     var lyricEmbedTranslated: Boolean
         get() = prefs.getBoolean(KEY_LYRIC_EMBED_TRANSLATED, true)
         set(value) = prefs.edit().putBoolean(KEY_LYRIC_EMBED_TRANSLATED, value).apply()
-
-    var lyricApiBaseUrl: String
-        get() = prefs.getString(KEY_LYRIC_API_BASE_URL, "") ?: ""
-        set(value) = prefs.edit().putString(KEY_LYRIC_API_BASE_URL, value).apply()
-
-    var lyricRealIP: String
-        get() = prefs.getString(KEY_LYRIC_REAL_IP, "") ?: ""
-        set(value) = prefs.edit().putString(KEY_LYRIC_REAL_IP, value).apply()
 
     var enableCover: Boolean
         get() = prefs.getBoolean(KEY_ENABLE_COVER, true)

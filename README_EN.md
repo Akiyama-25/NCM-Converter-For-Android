@@ -56,7 +56,6 @@ The automatic lyrics embedding feature now includes built-in direct official Net
 
 1. The app uses the built-in direct API by default—no server setup required to fetch and embed lyrics or cover art.
 2. Once lyrics are enabled, you can independently control whether to embed "original lyrics" and "translated lyrics" (merged line-by-line when both are enabled).
-3. You can also specify an optional custom proxy URL or Real IP parameter in Settings if needed.
 
 > Note: The translated lyrics feature only supports Simplified Chinese translation results. When the app language is not Simplified Chinese, the translation switch will display a corresponding note.
 
@@ -64,6 +63,7 @@ The automatic lyrics embedding feature now includes built-in direct official Net
 
 The following projects were referenced during development:
 
+- [rinchao0721/Melodia](https://github.com/rinchao0721/Melodia) — Architecture ideas and protocol reference for embedding direct, pure Kotlin encrypted NetEase official API client
 - [Ame-Player](https://github.com/Akiyama-25/Ame-Player) — Client-side NetEase encrypted API and release signing workflow reference
 - [NLyric](https://github.com/wwh1004/NLyric) — reference for lyrics matching strategy
 - [openyyy.com](https://openyyy.com/) — reference for NCM format parsing

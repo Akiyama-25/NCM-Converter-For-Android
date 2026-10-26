@@ -98,12 +98,6 @@
     <string name="pref_lyric_translated_on">出力ファイルに翻訳歌詞を含める</string>
     <string name="pref_lyric_translated_off">翻訳歌詞を含めない</string>
     <string name="pref_lyric_translated_note">（簡体中国語の翻訳結果のみ対応）</string>
-    <string name="pref_lyric_api">API URL</string>
-    <string name="pref_lyric_api_hint">内蔵公式直接接続（デフォルト）</string>
-    <string name="pref_lyric_api_support">公式NetEase直接接続を内蔵しており、サーバー構築は不要です。空欄でデフォルトの直接接続を使用、または独自プロキシ/サーバーのURLを指定可能です。</string>
-    <string name="pref_real_ip">Real IP</string>
-    <string name="pref_real_ip_hint">任意、例: 36.149.92.99</string>
-    <string name="pref_real_ip_support">空にするとrealIPパラメータを送信しません（一部のAPIデプロイに必要）</string>
 
     <string name="pref_instructions">使い方</string>
     <string name="pref_instructions_desc">アプリの使用ガイドを表示</string>
@@ -166,5 +160,4 @@
     <string name="log_action_export">エクスポート</string>
     <string name="log_action_clear">クリア</string>
     <string name="log_clear_confirm">ログをクリアしました</string>
-    <string name="lyric_api_not_configured_hint">歌詞APIアドレスが未設定のため、取得をスキップしました（設定で構成可能）。</string>
 </resources>

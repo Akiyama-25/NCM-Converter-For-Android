@@ -56,7 +56,6 @@ cd NCM-Converter-For-Android
 
 1. APP 默认使用内置官方直连 API，无需额外配置即可自动获取并嵌入歌词与封面。
 2. 歌词功能开启后，可独立控制是否嵌入「原文歌词」与「翻译歌词」（若同时开启将自动逐行对齐合并）。
-3. 亦可在设置中配置自定义 API 代理地址或填入 Real IP 参数。
 
 > 注：翻译歌词功能仅支持简体中文翻译结果。当 APP 语言不是简体中文时，翻译开关会显示相应提示。
 
@@ -64,6 +63,7 @@ cd NCM-Converter-For-Android
 
 本项目开发过程中参考了以下项目：
 
+- [rinchao0721/Melodia](https://github.com/rinchao0721/Melodia) — 提供了 App 内嵌纯 Kotlin 加密直连网易云官方 API 的架构思路与协议参考
 - [Ame-Player](https://github.com/Akiyama-25/Ame-Player) — 客户端内置 NetEase 官方加密直连与构建签名工作流参考
 - [NLyric](https://github.com/wwh1004/NLyric) — 歌词匹配策略参考
 - [openyyy.com](https://openyyy.com/) — NCM 格式解析参考

@@ -173,11 +173,9 @@ class DecryptService : Service() {
     }
 
     private suspend fun fetchLyricForResult(result: DecryptResult): DecryptResult {
-        val baseUrl = AppPrefs.lyricApiBaseUrl
         return try {
-            val realIP = AppPrefs.lyricRealIP.takeIf { it.isNotBlank() }
-            val api = RetrofitClient.getService(baseUrl)
-            val matcher = LyricMatcher(api, realIP = realIP)
+            val api = RetrofitClient.getService()
+            val matcher = LyricMatcher(api)
             val response = matcher.fetchLyric(result.metadata)
             if (response != null) {
                 val original = LrcParser.parse(response.lrc?.lyric)

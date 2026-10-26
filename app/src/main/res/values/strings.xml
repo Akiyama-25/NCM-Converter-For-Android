@@ -98,12 +98,6 @@
     <string name="pref_lyric_translated_on">Include translated lyrics in output</string>
     <string name="pref_lyric_translated_off">Do not include translated lyrics</string>
     <string name="pref_lyric_translated_note">(Only Simplified Chinese translations are supported)</string>
-    <string name="pref_lyric_api">API URL</string>
-    <string name="pref_lyric_api_hint">Built-in official direct API (default)</string>
-    <string name="pref_lyric_api_support">Built-in official NetEase API. No server deployment needed. Leave blank for default, or specify a custom proxy/server URL.</string>
-    <string name="pref_real_ip">Real IP</string>
-    <string name="pref_real_ip_hint">Optional, e.g. 36.149.92.99</string>
-    <string name="pref_real_ip_support">Leave empty to skip realIP parameter (required by some API deployments)</string>
 
     <string name="pref_instructions">Instructions</string>
     <string name="pref_instructions_desc">View app usage guide</string>
@@ -166,5 +160,4 @@
     <string name="log_action_export">Export</string>
     <string name="log_action_clear">Clear</string>
     <string name="log_clear_confirm">Logs cleared</string>
-    <string name="lyric_api_not_configured_hint">Lyric API URL is not set. Fetching lyrics skipped (configure in Settings).</string>
 </resources>

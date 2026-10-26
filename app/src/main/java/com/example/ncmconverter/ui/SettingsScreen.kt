@@ -20,8 +20,6 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardActions
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -55,13 +53,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.ImeAction
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -106,7 +101,6 @@ private enum class HslTarget { ACCENT, BG }
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3WindowSizeClassApi::class)
 @Composable
 fun SettingsScreen(onBack: () -> Unit, onPickOutputFolder: () -> Unit = {}) {
-    val focusManager = LocalFocusManager.current
     val context = LocalContext.current
     val activity = context as Activity
 
@@ -117,8 +111,6 @@ fun SettingsScreen(onBack: () -> Unit, onPickOutputFolder: () -> Unit = {}) {
     var enableLyric by remember { mutableStateOf(AppPrefs.enableLyric) }
     var lyricEmbedOriginal by remember { mutableStateOf(AppPrefs.lyricEmbedOriginal) }
     var lyricEmbedTranslated by remember { mutableStateOf(AppPrefs.lyricEmbedTranslated) }
-    var lyricApiBaseUrl by remember { mutableStateOf(AppPrefs.lyricApiBaseUrl) }
-    var lyricRealIP by remember { mutableStateOf(AppPrefs.lyricRealIP) }
     var enableCover by remember { mutableStateOf(AppPrefs.enableCover) }
     var useMonet by remember { mutableStateOf(AppPrefs.useMonetColors) }
     var gridColumns by remember { mutableIntStateOf(AppPrefs.gridColumns) }
@@ -152,10 +144,6 @@ fun SettingsScreen(onBack: () -> Unit, onPickOutputFolder: () -> Unit = {}) {
     var sliderH by remember { mutableFloatStateOf(0f) }
     var sliderS by remember { mutableFloatStateOf(0f) }
     var sliderL by remember { mutableFloatStateOf(0f) }
-
-    // API URL dialog state
-    var showApiUrlDialog by remember { mutableStateOf(false) }
-    var pendingApiUrl by remember { mutableStateOf(lyricApiBaseUrl) }
 
     // Debug & Logs state
     var logLevel by remember { mutableStateOf(AppPrefs.logLevel) }
@@ -523,54 +511,6 @@ fun SettingsScreen(onBack: () -> Unit, onPickOutputFolder: () -> Unit = {}) {
                 }
             }
 
-            // API URL setting (custom proxy / server fallback)
-            item(span = { GridItemSpan(maxLineSpan) }) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable { pendingApiUrl = lyricApiBaseUrl; showApiUrlDialog = true }
-                        .padding(horizontal = 16.dp, vertical = 12.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(
-                        Icons.Filled.Edit,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.size(20.dp)
-                    )
-                    Spacer(modifier = Modifier.width(12.dp))
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(stringResource(R.string.pref_lyric_api), fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurface)
-                        Text(
-                            if (lyricApiBaseUrl.isNotBlank()) lyricApiBaseUrl else stringResource(R.string.pref_lyric_api_hint),
-                            fontSize = 11.sp,
-                            color = if (lyricApiBaseUrl.isNotBlank()) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                }
-            }
-
-            // Real IP (visible when lyric enabled)
-            item(key = "lyric_ip", span = { GridItemSpan(maxLineSpan) }) {
-                AnimatedVisibility(
-                    visible = enableLyric,
-                    enter = fadeIn(tween(300)) + expandVertically(tween(300)),
-                    exit = fadeOut(tween(200)) + shrinkVertically(tween(200))
-                ) {
-                    OutlinedTextField(
-                        value = lyricRealIP,
-                        onValueChange = { lyricRealIP = it; AppPrefs.lyricRealIP = it },
-                        label = { Text(stringResource(R.string.pref_real_ip)) },
-                        placeholder = { Text(stringResource(R.string.pref_real_ip_hint)) },
-                        supportingText = { Text(stringResource(R.string.pref_real_ip_support), fontSize = 11.sp) },
-                        singleLine = true,
-                        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Done),
-                        keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() })
-                    )
-                }
-            }
-
             // ── Debug ──
             item(span = { GridItemSpan(maxLineSpan) }) { HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp)) }
             item(span = { GridItemSpan(maxLineSpan) }) { SectionHeader(stringResource(R.string.section_debug)) }
@@ -670,48 +610,6 @@ fun SettingsScreen(onBack: () -> Unit, onPickOutputFolder: () -> Unit = {}) {
                 }
             }
         }
-    }
-
-    // API URL Dialog
-    if (showApiUrlDialog) {
-        AlertDialog(
-            onDismissRequest = { showApiUrlDialog = false },
-            title = { Text(stringResource(R.string.pref_lyric_api)) },
-            text = {
-                Column {
-                    OutlinedTextField(
-                        value = pendingApiUrl,
-                        onValueChange = { pendingApiUrl = it },
-                        label = { Text(stringResource(R.string.pref_lyric_api)) },
-                        placeholder = { Text(stringResource(R.string.pref_lyric_api_hint)) },
-                        singleLine = true,
-                        modifier = Modifier.fillMaxWidth(),
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri, imeAction = ImeAction.Done),
-                        keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() })
-                    )
-                    Text(
-                        stringResource(R.string.pref_lyric_api_support),
-                        fontSize = 11.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(top = 8.dp)
-                    )
-                }
-            },
-            confirmButton = {
-                TextButton(onClick = {
-                    lyricApiBaseUrl = pendingApiUrl.trim()
-                    AppPrefs.lyricApiBaseUrl = lyricApiBaseUrl
-                    showApiUrlDialog = false
-                }) {
-                    Text(stringResource(R.string.dialog_confirm))
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showApiUrlDialog = false }) {
-                    Text(stringResource(R.string.home_cancel))
-                }
-            }
-        )
     }
 
     if (showColumnsDialog) {
@@ -1315,4 +1213,3 @@ private fun LogFormatDropdown(currentFormat: String, onSelect: (String) -> Unit)
         }
     }
 }
-

@@ -38,6 +38,8 @@ jobs:
             echo "::error::Tag name cannot be empty"
             exit 1
           fi
+          # Git tag names cannot contain spaces. Automatically sanitize whitespace to hyphens.
+          TAG="$(printf '%s' "$TAG" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//' -e 's/[[:space:]]\+/-/g')"
           SAFE_TAG="$(printf '%s' "$TAG" | tr '/ :' '---')"
           echo "tag=$TAG" >> "$GITHUB_OUTPUT"
           echo "safe_tag=$SAFE_TAG" >> "$GITHUB_OUTPUT"

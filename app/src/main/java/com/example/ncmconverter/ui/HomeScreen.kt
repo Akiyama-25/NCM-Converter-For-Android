@@ -1,7 +1,6 @@
 package com.example.ncmconverter.ui
 
 import android.app.Activity
-import android.os.Build
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.*
@@ -38,7 +37,8 @@ fun HomeScreen(
     viewModel: ConvertViewModel,
     onPickFiles: () -> Unit,
     onSaveFile: (FileItem) -> Unit,
-    onOpenSettings: () -> Unit
+    onOpenSettings: () -> Unit,
+    isBackEnabled: Boolean = true
 ) {
     val files by viewModel.files.collectAsState()
     val isProcessing by viewModel.isProcessing.collectAsState()
@@ -57,10 +57,8 @@ fun HomeScreen(
     var animatingOutItems by remember { mutableStateOf(emptyMap<Long, FileItem>()) }
     var lastBackPress by remember { mutableStateOf(0L) }
 
-    // On Android 14+ (API 34+), disable in-app BackHandler so AOSP can perform the native
-    // back-to-home predictive back gesture (scaling the window into the launcher icon and revealing the desktop).
-    // On legacy Android (<34), preserve the double-tap to exit convenience.
-    BackHandler(enabled = Build.VERSION.SDK_INT < 34) {
+    // Double-tap back key or gesture to exit app
+    BackHandler(enabled = isBackEnabled) {
         val now = System.currentTimeMillis()
         if (now - lastBackPress < 2000) {
             activity.finish()

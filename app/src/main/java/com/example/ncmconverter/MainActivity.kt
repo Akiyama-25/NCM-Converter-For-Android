@@ -2,7 +2,6 @@ package com.example.ncmconverter
 
 import android.content.Intent
 import android.graphics.drawable.ColorDrawable
-import android.os.Build
 import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
@@ -10,7 +9,8 @@ import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
-import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.core.content.ContextCompat
 import androidx.core.os.LocaleListCompat
 import androidx.lifecycle.ViewModelProvider
@@ -22,6 +22,8 @@ import com.example.ncmconverter.service.DecryptService
 import com.example.ncmconverter.ui.ConvertViewModel
 import com.example.ncmconverter.ui.FileItem
 import com.example.ncmconverter.ui.HomeScreen
+import com.example.ncmconverter.ui.PredictiveBackContainer
+import com.example.ncmconverter.ui.SettingsScreen
 import com.example.ncmconverter.ui.theme.NcmConverterTheme
 import com.example.ncmconverter.util.AppPrefs
 import com.example.ncmconverter.util.FileUtils
@@ -32,10 +34,27 @@ class MainActivity : AppCompatActivity() {
     companion object {
         private const val KEY_FILE_URIS = "file_uris"
         private const val KEY_FILE_NAMES = "file_names"
+        const val EXTRA_OPEN_SETTINGS = "open_settings"
     }
 
     private lateinit var viewModel: ConvertViewModel
     private var lastAppliedLanguage: String? = null
+
+    // Launcher for selecting custom output directory in Settings
+    private val openDocumentTreeLauncher = registerForActivityResult(
+        ActivityResultContracts.OpenDocumentTree()
+    ) { uri ->
+        if (uri != null) {
+            try {
+                contentResolver.takePersistableUriPermission(
+                    uri,
+                    android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION or
+                    android.content.Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+                )
+            } catch (_: Exception) {}
+            AppPrefs.customOutputUri = uri.toString()
+        }
+    }
 
     private val filePickerLauncher = registerForActivityResult(
         ActivityResultContracts.OpenMultipleDocuments()
@@ -118,17 +137,28 @@ class MainActivity : AppCompatActivity() {
                 }
             }
 
+            var showSettings by rememberSaveable {
+                mutableStateOf(intent?.getBooleanExtra(EXTRA_OPEN_SETTINGS, false) == true)
+            }
+
             NcmConverterTheme {
-                HomeScreen(
-                    viewModel = viewModel,
-                    onPickFiles = { filePickerLauncher.launch(arrayOf("*/*")) },
-                    onSaveFile = { item -> saveResult(item) },
-                    onOpenSettings = {
-                        startActivity(Intent(this, SettingsActivity::class.java))
-                        if (Build.VERSION.SDK_INT < 34) {
-                            @Suppress("DEPRECATION")
-                            overridePendingTransition(R.anim.slide_in_right, R.anim.slide_out_left)
-                        }
+                PredictiveBackContainer(
+                    isOverlayOpen = showSettings,
+                    onCloseOverlay = { showSettings = false },
+                    backgroundContent = {
+                        HomeScreen(
+                            viewModel = viewModel,
+                            onPickFiles = { filePickerLauncher.launch(arrayOf("*/*")) },
+                            onSaveFile = { item -> saveResult(item) },
+                            onOpenSettings = { showSettings = true },
+                            isBackEnabled = !showSettings
+                        )
+                    },
+                    overlayContent = { requestClose ->
+                        SettingsScreen(
+                            onBack = requestClose,
+                            onPickOutputFolder = { openDocumentTreeLauncher.launch(null) }
+                        )
                     }
                 )
             }

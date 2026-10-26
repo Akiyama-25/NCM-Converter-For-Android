@@ -4,15 +4,10 @@ import android.graphics.drawable.ColorDrawable
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
-import androidx.activity.compose.PredictiveBackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
-import androidx.compose.foundation.layout.Box
-import androidx.compose.runtime.*
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.core.content.ContextCompat
 import com.example.ncmconverter.ui.SettingsScreen
 import com.example.ncmconverter.ui.theme.NcmConverterTheme
@@ -47,42 +42,19 @@ class SettingsActivity : AppCompatActivity() {
 
         setContent {
             NcmConverterTheme {
-                var backProgress by remember { mutableFloatStateOf(0f) }
-
-                PredictiveBackHandler { progress ->
-                    backProgress = 0f
-                    progress.collect { event ->
-                        backProgress = event.progress
+                SettingsScreen(
+                    onBack = { onBackPressedDispatcher.onBackPressed() },
+                    onPickOutputFolder = {
+                        openDocumentTreeLauncher.launch(null)
                     }
-                    finish()
-                }
-
-                Box(
-                    modifier = Modifier.graphicsLayer {
-                        val scale = 1f - backProgress * 0.1f
-                        scaleX = scale
-                        scaleY = scale
-                        alpha = 1f - backProgress * 0.5f
-                        translationX = size.width * backProgress * 0.3f
-                    }
-                ) {
-                    SettingsScreen(
-                        onBack = { finish() },
-                        onPickOutputFolder = {
-                            openDocumentTreeLauncher.launch(null)
-                        }
-                    )
-                }
+                )
             }
         }
     }
 
     override fun finish() {
         super.finish()
-        if (Build.VERSION.SDK_INT >= 34) {
-            @Suppress("WrongConstant")
-            overrideActivityTransition(1, R.anim.slide_in_left, R.anim.slide_out_right)
-        } else {
+        if (Build.VERSION.SDK_INT < 34) {
             @Suppress("DEPRECATION")
             overridePendingTransition(R.anim.slide_in_left, R.anim.slide_out_right)
         }

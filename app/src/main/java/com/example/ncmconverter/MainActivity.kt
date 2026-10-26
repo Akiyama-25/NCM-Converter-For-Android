@@ -125,10 +125,7 @@ class MainActivity : AppCompatActivity() {
                     onSaveFile = { item -> saveResult(item) },
                     onOpenSettings = {
                         startActivity(Intent(this, SettingsActivity::class.java))
-                        if (Build.VERSION.SDK_INT >= 34) {
-                            @Suppress("WrongConstant")
-                            overrideActivityTransition(0, R.anim.slide_in_right, R.anim.slide_out_left)
-                        } else {
+                        if (Build.VERSION.SDK_INT < 34) {
                             @Suppress("DEPRECATION")
                             overridePendingTransition(R.anim.slide_in_right, R.anim.slide_out_left)
                         }

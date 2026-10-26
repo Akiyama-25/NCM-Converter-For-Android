@@ -21,9 +21,8 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 
 /**
  * Container implementing standard AOSP predictive back gesture with live gesture-following
@@ -31,10 +30,10 @@ import kotlinx.coroutines.withContext
  *
  * Visual spec:
  * - Overlay scales down from 1.00 to 0.90 following swipe progress
- * - Dynamic rounded corners morph from 0.dp to 28.dp
+ * - Dynamic rounded corners morph from 0.dp to 28.dp (strictly non-negative)
  * - Floating card shadow elevation (up to 12.dp)
  * - Underlying background page reveals beneath with AOSP parallax scale (0.94 -> 1.00) and fading scrim
- * - Smooth physics spring on gesture cancellation
+ * - Smooth transition on cancellation (non-overshooting to prevent negative corner radius)
  * - Smooth slide-out on gesture commit or manual back button press
  */
 @Composable
@@ -56,9 +55,11 @@ fun PredictiveBackContainer(
     // Regular slide enter/exit animator (0f = settled on-screen, 1f = offscreen to the right)
     val enterExitAnim = remember { Animatable(if (isOverlayOpen) 0f else 1f) }
 
+    // Active animation job holder to manage gesture completion/cancellation transitions safely
+    var animJob by remember { mutableStateOf<Job?>(null) }
+
     // Predictive back gesture state
     var isPredicting by remember { mutableStateOf(false) }
-    var isClosing by remember { mutableStateOf(false) }
     var predictiveProgress by remember { mutableFloatStateOf(0f) }
     var predictiveSwipeEdge by remember { mutableIntStateOf(BackEventCompat.EDGE_LEFT) }
     var commitExitFraction by remember { mutableFloatStateOf(0f) }
@@ -66,8 +67,8 @@ fun PredictiveBackContainer(
     // Handle isOverlayOpen property changes from parent
     LaunchedEffect(isOverlayOpen) {
         if (isOverlayOpen) {
+            animJob?.cancel()
             internalOverlayOpen = true
-            isClosing = false
             isPredicting = false
             predictiveProgress = 0f
             commitExitFraction = 0f
@@ -76,9 +77,10 @@ fun PredictiveBackContainer(
                 targetValue = 0f,
                 animationSpec = tween(durationMillis = 280, easing = FastOutSlowInEasing)
             )
-        } else if (!isClosing) {
+        } else if (commitExitFraction == 0f && enterExitAnim.value == 0f) {
             internalOverlayOpen = false
             enterExitAnim.snapTo(1f)
+            isPredicting = false
             predictiveProgress = 0f
             commitExitFraction = 0f
         }
@@ -86,65 +88,70 @@ fun PredictiveBackContainer(
 
     // Function to close overlay with smooth slide-out animation (used by top bar back button)
     val requestClose: () -> Unit = {
-        if (!isClosing && !isPredicting && internalOverlayOpen) {
-            coroutineScope.launch {
-                isClosing = true
+        if (internalOverlayOpen && !isPredicting && commitExitFraction == 0f) {
+            animJob?.cancel()
+            animJob = coroutineScope.launch {
                 enterExitAnim.animateTo(
                     targetValue = 1f,
                     animationSpec = tween(durationMillis = 240, easing = FastOutSlowInEasing)
                 )
                 onCloseOverlay()
                 internalOverlayOpen = false
-                isClosing = false
+                predictiveProgress = 0f
+                commitExitFraction = 0f
             }
         }
     }
 
     // Predictive back gesture handler
-    PredictiveBackHandler(enabled = isOverlayOpen && enterExitAnim.value == 0f && !isClosing) { progressFlow ->
+    // Note: Do NOT add transient closing flags to enabled; enabled remains true while overlay is open
+    // so gesture coroutines are never cancelled prematurely mid-animation.
+    PredictiveBackHandler(enabled = isOverlayOpen && enterExitAnim.value == 0f) { progressFlow ->
+        animJob?.cancel()
         isPredicting = true
+        commitExitFraction = 0f
         try {
             progressFlow.collect { backEvent ->
-                predictiveProgress = backEvent.progress
+                predictiveProgress = backEvent.progress.coerceIn(0f, 1f)
                 predictiveSwipeEdge = backEvent.swipeEdge
             }
-            // --- GESTURE COMMITTED ---
-            isClosing = true
-            val commitAnim = Animatable(0f)
-            commitAnim.animateTo(
-                targetValue = 1f,
-                animationSpec = tween(durationMillis = 200, easing = FastOutSlowInEasing)
-            ) {
-                commitExitFraction = this.value
+            // --- GESTURE COMMITTED (user released finger to finish back navigation) ---
+            animJob = coroutineScope.launch {
+                animate(
+                    initialValue = 0f,
+                    targetValue = 1f,
+                    animationSpec = tween(durationMillis = 180, easing = FastOutLinearInEasing)
+                ) { value, _ ->
+                    commitExitFraction = value.coerceIn(0f, 1f)
+                }
+                onCloseOverlay()
+                internalOverlayOpen = false
+                isPredicting = false
+                predictiveProgress = 0f
+                commitExitFraction = 0f
             }
-            onCloseOverlay()
-            internalOverlayOpen = false
-            isClosing = false
-            isPredicting = false
-            predictiveProgress = 0f
-            commitExitFraction = 0f
         } catch (e: CancellationException) {
-            // --- GESTURE CANCELLED (user slid back to edge) ---
-            withContext(NonCancellable) {
-                val cancelAnim = Animatable(predictiveProgress)
-                cancelAnim.animateTo(
+            // --- GESTURE CANCELLED (user slid back to edge without committing) ---
+            val startProgress = predictiveProgress.coerceIn(0f, 1f)
+            animJob = coroutineScope.launch {
+                animate(
+                    initialValue = startProgress,
                     targetValue = 0f,
-                    animationSpec = spring(
-                        dampingRatio = Spring.DampingRatioMediumBouncy,
-                        stiffness = Spring.StiffnessMediumLow
-                    )
-                ) {
-                    predictiveProgress = this.value
+                    animationSpec = tween(durationMillis = 180, easing = FastOutSlowInEasing)
+                ) { value, _ ->
+                    predictiveProgress = value.coerceIn(0f, 1f)
                 }
                 predictiveProgress = 0f
                 isPredicting = false
             }
-            throw e
         }
     }
 
     // Calculate transformation values
     val isGestureMode = isPredicting || commitExitFraction > 0f
+
+    val eased = FastOutSlowInEasing.transform(predictiveProgress.coerceIn(0f, 1f)).coerceIn(0f, 1f)
+    val exitFraction = commitExitFraction.coerceIn(0f, 1f)
 
     val currentScale: Float
     val currentTranslationX: Float
@@ -156,32 +163,34 @@ fun PredictiveBackContainer(
     val currentScrimAlpha: Float
 
     if (isGestureMode) {
-        val eased = FastOutSlowInEasing.transform(predictiveProgress)
-        // Card scales down to 0.90 during drag, slightly further to 0.85 during commit exit
-        currentScale = (1f - 0.10f * eased) * (1f - 0.05f * commitExitFraction)
-        currentCornerRadius = (28f * eased).dp
-        currentElevation = (12f * eased).dp
+        // Card scales down to 0.90 during drag, slightly further to 0.82 during commit exit
+        currentScale = ((1f - 0.10f * eased) * (1f - 0.08f * exitFraction)).coerceIn(0.80f, 1f)
+        // Corner radius strictly clamped in [0.dp, 28.dp] - NEVER negative
+        currentCornerRadius = (28f * eased).coerceIn(0f, 28f).dp
+        currentElevation = (12f * eased).coerceIn(0f, 12f).dp
 
         val edgeMultiplier = if (predictiveSwipeEdge == BackEventCompat.EDGE_LEFT) 1f else -1f
         val dragOffset = edgeMultiplier * (density.density * 36f) * eased
-        val commitOffset = (if (predictiveSwipeEdge == BackEventCompat.EDGE_RIGHT) -screenWidthPx else screenWidthPx) * commitExitFraction
+        val commitOffset = (if (predictiveSwipeEdge == BackEventCompat.EDGE_RIGHT) -screenWidthPx else screenWidthPx) * exitFraction
         currentTranslationX = dragOffset + commitOffset
-        currentAlpha = (1f - 0.08f * eased) * (1f - commitExitFraction)
+        currentAlpha = ((1f - 0.05f * eased) * (1f - exitFraction)).coerceIn(0f, 1f)
 
         // Parallax zoom on background content (0.94 -> 1.00)
-        val totalProgress = (eased + (1f - eased) * commitExitFraction).coerceIn(0f, 1f)
-        bgScale = 0.94f + 0.06f * totalProgress
-        currentScrimAlpha = 0.25f * (1f - totalProgress)
+        val totalProgress = (eased + (1f - eased) * exitFraction).coerceIn(0f, 1f)
+        bgScale = (0.94f + 0.06f * totalProgress).coerceIn(0.90f, 1f)
+        currentScrimAlpha = (0.25f * (1f - totalProgress)).coerceIn(0f, 0.25f)
     } else {
-        val openFraction = (1f - enterExitAnim.value).coerceIn(0f, 1f)
+        val slideVal = enterExitAnim.value.coerceIn(0f, 1f)
+        val openFraction = (1f - slideVal).coerceIn(0f, 1f)
+
         currentScale = 1f
         currentCornerRadius = 0.dp
         currentElevation = 0.dp
-        currentTranslationX = screenWidthPx * enterExitAnim.value
-        currentAlpha = 1f - (0.3f * enterExitAnim.value)
+        currentTranslationX = screenWidthPx * slideVal
+        currentAlpha = (1f - 0.3f * slideVal).coerceIn(0f, 1f)
 
-        bgScale = 1f - (0.06f * openFraction)
-        currentScrimAlpha = 0.25f * openFraction
+        bgScale = (1f - 0.06f * openFraction).coerceIn(0.90f, 1f)
+        currentScrimAlpha = (0.25f * openFraction).coerceIn(0f, 0.25f)
     }
 
     Box(modifier = modifier.fillMaxSize()) {
@@ -216,6 +225,10 @@ fun PredictiveBackContainer(
 
         // --- LAYER 3: Overlay Screen (SettingsScreen) ---
         if (internalOverlayOpen) {
+            val safeCornerRadius = currentCornerRadius.coerceAtLeast(0.dp)
+            val safeElevation = currentElevation.coerceAtLeast(0.dp)
+            val cardShape = RoundedCornerShape(safeCornerRadius)
+
             Box(
                 modifier = Modifier
                     .fillMaxSize()
@@ -224,16 +237,18 @@ fun PredictiveBackContainer(
                         scaleY = currentScale
                         translationX = currentTranslationX
                         alpha = currentAlpha
-                        shadowElevation = currentElevation.toPx()
-                        shape = RoundedCornerShape(currentCornerRadius)
-                        clip = currentCornerRadius > 0.dp
+                        if (safeElevation > 0.dp) {
+                            shadowElevation = safeElevation.toPx()
+                        }
+                        shape = cardShape
+                        clip = safeCornerRadius > 0.dp
                     }
                     .shadow(
-                        elevation = currentElevation,
-                        shape = RoundedCornerShape(currentCornerRadius),
+                        elevation = safeElevation,
+                        shape = cardShape,
                         clip = false
                     )
-                    .clip(RoundedCornerShape(currentCornerRadius))
+                    .clip(cardShape)
                     .background(MaterialTheme.colorScheme.background)
             ) {
                 overlayContent(requestClose)

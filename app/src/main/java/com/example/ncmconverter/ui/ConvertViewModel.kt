@@ -184,7 +184,6 @@ class ConvertViewModel(application: Application) : AndroidViewModel(application)
 
     private suspend fun fetchLyric(result: DecryptResult): DecryptResult {
         val baseUrl = AppPrefs.lyricApiBaseUrl
-        if (baseUrl.isBlank()) return result
         return try {
             val realIP = AppPrefs.lyricRealIP.takeIf { it.isNotBlank() }
             val api = RetrofitClient.getService(baseUrl)

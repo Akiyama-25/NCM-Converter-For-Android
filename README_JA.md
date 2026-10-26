@@ -52,12 +52,11 @@ cd NCM-Converter-For-Android
 
 ## 歌詞機能
 
-歌詞自動埋め込み機能を利用するには、自前で構築した NetEase Cloud Music API サービスが必要です。
+歌詞自動埋め込み機能には NetEase 公式直接接続 API が内蔵されており、外部サーバーを構築することなくそのまま利用可能です。
 
-1. [NeteaseCloudMusicApiEnhanced](https://github.com/neteasecloudmusicapienhanced/api-enhanced) をデプロイする
-2. アプリの設定画面でダイアログから API アドレスを入力し、保存後に歌詞関連オプションが表示される
-3. 歌詞機能を有効にすると、「原文歌詞」と「翻訳歌詞」の埋め込みを独立して制御可能
-4. 地域を指定する必要がある場合は、Real IP パラメータを入力する
+1. アプリはデフォルトで内蔵公式直接接続 API を使用するため、サーバー設定不要で歌詞とカバー画像を取得・埋め込みできます。
+2. 歌詞機能を有効にすると、「原文歌詞」と「翻訳歌詞」の埋め込みを個別に制御可能（両方有効時は行ごとに自動結合）。
+3. 必要に応じて設定画面から独自の API プロキシアドレスや Real IP パラメータを指定することも可能です。
 
 > 注：翻訳歌詞機能は簡体中国語の翻訳結果のみ対応しています。アプリの言語が簡体中国語以外の場合、翻訳スイッチに対応する注記が表示されます。
 
@@ -65,8 +64,8 @@ cd NCM-Converter-For-Android
 
 本プロジェクトの開発にあたり、以下のプロジェクトを参考にしました：
 
+- [Ame-Player](https://github.com/Akiyama-25/Ame-Player) — クライアント内蔵 NetEase 暗号化直接接続および署名付きビルドワークフローの参考
 - [NLyric](https://github.com/wwh1004/NLyric) — 歌詞マッチング戦略の参考
-- [NeteaseCloudMusicApiEnhanced](https://github.com/neteasecloudmusicapienhanced/api-enhanced) — 歌詞／メタデータ API サービス
 - [openyyy.com](https://openyyy.com/) — NCM 形式解析の参考
 
 ## ライセンス

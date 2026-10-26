@@ -472,7 +472,58 @@ fun SettingsScreen(onBack: () -> Unit, onPickOutputFolder: () -> Unit = {}) {
             item(span = { GridItemSpan(maxLineSpan) }) { HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp)) }
             item(span = { GridItemSpan(maxLineSpan) }) { SectionHeader(stringResource(R.string.section_lyrics)) }
 
-            // API URL setting (always visible)
+            // Auto embed lyrics switch (built-in API works out-of-the-box)
+            item {
+                SettingSwitch(
+                    title = stringResource(R.string.pref_auto_lyric),
+                    subtitle = stringResource(if (enableLyric) R.string.pref_auto_lyric_on else R.string.pref_auto_lyric_off),
+                    checked = enableLyric,
+                    onCheckedChange = { enableLyric = it; AppPrefs.enableLyric = it }
+                )
+            }
+
+            // Original lyric switch (visible when lyric enabled)
+            item {
+                AnimatedVisibility(
+                    visible = enableLyric,
+                    enter = fadeIn(tween(300)) + expandVertically(tween(300)),
+                    exit = fadeOut(tween(200)) + shrinkVertically(tween(200))
+                ) {
+                    SettingSwitch(
+                        title = stringResource(R.string.pref_lyric_original),
+                        subtitle = stringResource(if (lyricEmbedOriginal) R.string.pref_lyric_original_on else R.string.pref_lyric_original_off),
+                        checked = lyricEmbedOriginal,
+                        onCheckedChange = { lyricEmbedOriginal = it; AppPrefs.lyricEmbedOriginal = it }
+                    )
+                }
+            }
+
+            // Translated lyric switch (visible when lyric enabled)
+            item {
+                AnimatedVisibility(
+                    visible = enableLyric,
+                    enter = fadeIn(tween(300)) + expandVertically(tween(300)),
+                    exit = fadeOut(tween(200)) + shrinkVertically(tween(200))
+                ) {
+                    val translatedSubtitle = if (lyricEmbedTranslated) {
+                        if (isSimplifiedChinese) {
+                            stringResource(R.string.pref_lyric_translated_on)
+                        } else {
+                            stringResource(R.string.pref_lyric_translated_on) + " " + stringResource(R.string.pref_lyric_translated_note)
+                        }
+                    } else {
+                        stringResource(R.string.pref_lyric_translated_off)
+                    }
+                    SettingSwitch(
+                        title = stringResource(R.string.pref_lyric_translated),
+                        subtitle = translatedSubtitle,
+                        checked = lyricEmbedTranslated,
+                        onCheckedChange = { lyricEmbedTranslated = it; AppPrefs.lyricEmbedTranslated = it }
+                    )
+                }
+            }
+
+            // API URL setting (custom proxy / server fallback)
             item(span = { GridItemSpan(maxLineSpan) }) {
                 Row(
                     modifier = Modifier
@@ -499,67 +550,10 @@ fun SettingsScreen(onBack: () -> Unit, onPickOutputFolder: () -> Unit = {}) {
                 }
             }
 
-            // Auto embed lyrics switch (only visible when API URL is set)
-            item {
-                AnimatedVisibility(
-                    visible = lyricApiBaseUrl.isNotBlank(),
-                    enter = fadeIn(tween(300)) + expandVertically(tween(300)),
-                    exit = fadeOut(tween(200)) + shrinkVertically(tween(200))
-                ) {
-                    SettingSwitch(
-                        title = stringResource(R.string.pref_auto_lyric),
-                        subtitle = stringResource(if (enableLyric) R.string.pref_auto_lyric_on else R.string.pref_auto_lyric_off),
-                        checked = enableLyric,
-                        onCheckedChange = { enableLyric = it; AppPrefs.enableLyric = it }
-                    )
-                }
-            }
-
-            // Original lyric switch (visible when lyric enabled)
-            item {
-                AnimatedVisibility(
-                    visible = lyricApiBaseUrl.isNotBlank() && enableLyric,
-                    enter = fadeIn(tween(300)) + expandVertically(tween(300)),
-                    exit = fadeOut(tween(200)) + shrinkVertically(tween(200))
-                ) {
-                    SettingSwitch(
-                        title = stringResource(R.string.pref_lyric_original),
-                        subtitle = stringResource(if (lyricEmbedOriginal) R.string.pref_lyric_original_on else R.string.pref_lyric_original_off),
-                        checked = lyricEmbedOriginal,
-                        onCheckedChange = { lyricEmbedOriginal = it; AppPrefs.lyricEmbedOriginal = it }
-                    )
-                }
-            }
-
-            // Translated lyric switch (visible when lyric enabled)
-            item {
-                AnimatedVisibility(
-                    visible = lyricApiBaseUrl.isNotBlank() && enableLyric,
-                    enter = fadeIn(tween(300)) + expandVertically(tween(300)),
-                    exit = fadeOut(tween(200)) + shrinkVertically(tween(200))
-                ) {
-                    val translatedSubtitle = if (lyricEmbedTranslated) {
-                        if (isSimplifiedChinese) {
-                            stringResource(R.string.pref_lyric_translated_on)
-                        } else {
-                            stringResource(R.string.pref_lyric_translated_on) + " " + stringResource(R.string.pref_lyric_translated_note)
-                        }
-                    } else {
-                        stringResource(R.string.pref_lyric_translated_off)
-                    }
-                    SettingSwitch(
-                        title = stringResource(R.string.pref_lyric_translated),
-                        subtitle = translatedSubtitle,
-                        checked = lyricEmbedTranslated,
-                        onCheckedChange = { lyricEmbedTranslated = it; AppPrefs.lyricEmbedTranslated = it }
-                    )
-                }
-            }
-
             // Real IP (visible when lyric enabled)
             item(key = "lyric_ip", span = { GridItemSpan(maxLineSpan) }) {
                 AnimatedVisibility(
-                    visible = lyricApiBaseUrl.isNotBlank() && enableLyric,
+                    visible = enableLyric,
                     enter = fadeIn(tween(300)) + expandVertically(tween(300)),
                     exit = fadeOut(tween(200)) + shrinkVertically(tween(200))
                 ) {

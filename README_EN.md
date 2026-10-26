@@ -52,12 +52,11 @@ cd NCM-Converter-For-Android
 
 ## Lyrics
 
-The automatic lyrics embedding feature requires a self-hosted NetEase Cloud Music API service.
+The automatic lyrics embedding feature now includes built-in direct official NetEase API integration, working out of the box without requiring external cloud server deployments.
 
-1. Deploy [NeteaseCloudMusicApiEnhanced](https://github.com/neteasecloudmusicapienhanced/api-enhanced)
-2. Enter the API address via the dialog in app settings; lyric options will only appear after saving
-3. Once lyrics are enabled, you can independently control whether to embed "original lyrics" and "translated lyrics"
-4. To specify a region, you can provide a Real IP parameter
+1. The app uses the built-in direct API by default—no server setup required to fetch and embed lyrics or cover art.
+2. Once lyrics are enabled, you can independently control whether to embed "original lyrics" and "translated lyrics" (merged line-by-line when both are enabled).
+3. You can also specify an optional custom proxy URL or Real IP parameter in Settings if needed.
 
 > Note: The translated lyrics feature only supports Simplified Chinese translation results. When the app language is not Simplified Chinese, the translation switch will display a corresponding note.
 
@@ -65,8 +64,8 @@ The automatic lyrics embedding feature requires a self-hosted NetEase Cloud Musi
 
 The following projects were referenced during development:
 
+- [Ame-Player](https://github.com/Akiyama-25/Ame-Player) — Client-side NetEase encrypted API and release signing workflow reference
 - [NLyric](https://github.com/wwh1004/NLyric) — reference for lyrics matching strategy
-- [NeteaseCloudMusicApiEnhanced](https://github.com/neteasecloudmusicapienhanced/api-enhanced) — lyrics/metadata API service
 - [openyyy.com](https://openyyy.com/) — reference for NCM format parsing
 
 ## License

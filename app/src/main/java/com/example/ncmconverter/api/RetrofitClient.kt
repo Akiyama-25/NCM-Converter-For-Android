@@ -13,6 +13,7 @@ object RetrofitClient {
 
     private var currentBaseUrl: String = ""
     private var service: NcmApiService? = null
+    private val directService: NcmApiService by lazy { DirectNcmApiService() }
 
     private val okHttpClient: OkHttpClient by lazy {
         val logging = HttpLoggingInterceptor { message ->
@@ -42,13 +43,22 @@ object RetrofitClient {
             .build()
     }
 
+    /**
+     * Get [NcmApiService] instance.
+     * When [baseUrl] is null, blank, or points to music.163.com, returns [DirectNcmApiService]
+     * which talks directly to NetEase official servers via encrypted EAPI signatures on the client.
+     * When [baseUrl] is specified with a custom proxy/server address, returns a Retrofit-backed service.
+     */
     fun getService(baseUrl: String? = null): NcmApiService {
-        val targetUrl = baseUrl?.takeIf { it.isNotBlank() }
-            ?: throw IllegalStateException("API 地址未设置，请在设置中配置")
+        val targetUrl = baseUrl?.trim() ?: ""
+        if (targetUrl.isBlank() || targetUrl.contains("music.163.com")) {
+            return directService
+        }
+
         if (service == null || targetUrl != currentBaseUrl) {
             currentBaseUrl = targetUrl
             val base = if (targetUrl.endsWith("/")) targetUrl else "$targetUrl/"
-            Log.d(TAG, "Creating Retrofit service with baseUrl: $base")
+            Log.d(TAG, "Creating Retrofit service with custom baseUrl: $base")
             val retrofit = Retrofit.Builder()
                 .baseUrl(base)
                 .client(okHttpClient)

@@ -98,9 +98,9 @@
     <string name="pref_lyric_translated_on">輸出檔案中包含翻譯歌詞</string>
     <string name="pref_lyric_translated_off">不嵌入翻譯歌詞</string>
     <string name="pref_lyric_translated_note">（僅支援簡體中文翻譯結果）</string>
-    <string name="pref_lyric_api">API 網址 *</string>
-    <string name="pref_lyric_api_hint">https://your-api-domain.com</string>
-    <string name="pref_lyric_api_support">必填，需自行架設 NeteaseCloudMusicApiEnhanced 服務\n參考：github.com/NeteaseCloudMusicApiEnhanced/api-enhanced</string>
+    <string name="pref_lyric_api">API 網址</string>
+    <string name="pref_lyric_api_hint">內建官方直連（預設）</string>
+    <string name="pref_lyric_api_support">內建官方網易雲直連介面，無需架設伺服器。留空即使用內建 API，亦可填寫自建代理或第三方服務網址。</string>
     <string name="pref_real_ip">Real IP</string>
     <string name="pref_real_ip_hint">選填，如 36.149.92.99</string>
     <string name="pref_real_ip_support">留空則不傳遞 realIP 參數（部分 API 部署需要此參數）</string>

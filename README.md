@@ -52,12 +52,11 @@ cd NCM-Converter-For-Android
 
 ## 歌词功能
 
-歌词自动嵌入功能需要配合自建的网易云音乐 API 服务使用。
+歌词自动嵌入功能已内置网易云官方接口直连，开箱即用，无需额外搭建外部云端服务。
 
-1. 部署 [NeteaseCloudMusicApiEnhanced](https://github.com/neteasecloudmusicapienhanced/api-enhanced)
-2. 在 APP 设置中通过对话框填入 API 地址，保存后才会显示歌词相关选项
-3. 歌词功能开启后，可独立控制是否嵌入「原文歌词」与「翻译歌词」
-4. 如需指定地区，可填入 Real IP 参数
+1. APP 默认使用内置官方直连 API，无需额外配置即可自动获取并嵌入歌词与封面。
+2. 歌词功能开启后，可独立控制是否嵌入「原文歌词」与「翻译歌词」（若同时开启将自动逐行对齐合并）。
+3. 亦可在设置中配置自定义 API 代理地址或填入 Real IP 参数。
 
 > 注：翻译歌词功能仅支持简体中文翻译结果。当 APP 语言不是简体中文时，翻译开关会显示相应提示。
 
@@ -65,8 +64,8 @@ cd NCM-Converter-For-Android
 
 本项目开发过程中参考了以下项目：
 
+- [Ame-Player](https://github.com/Akiyama-25/Ame-Player) — 客户端内置 NetEase 官方加密直连与构建签名工作流参考
 - [NLyric](https://github.com/wwh1004/NLyric) — 歌词匹配策略参考
-- [NeteaseCloudMusicApiEnhanced](https://github.com/neteasecloudmusicapienhanced/api-enhanced) — 歌词/元数据 API 服务
 - [openyyy.com](https://openyyy.com/) — NCM 格式解析参考
 
 ## 许可证

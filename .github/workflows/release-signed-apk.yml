@@ -1,0 +1,186 @@
+name: Publish Signed APK Release
+
+on:
+  push:
+    tags:
+      - '*'
+  workflow_dispatch:
+    inputs:
+      tag_name:
+        description: Version tag to build and publish (for example v1.0.0 or release-0.8)
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  build-sign:
+    name: Build and sign release APK
+    outputs:
+      tag: ${{ steps.ref.outputs.tag }}
+      safe_tag: ${{ steps.ref.outputs.safe_tag }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Select release ref
+        id: ref
+        env:
+          INPUT_TAG: ${{ inputs.tag_name }}
+          EVENT_REF: ${{ github.ref }}
+        run: |
+          set -euo pipefail
+          if [ -n "$INPUT_TAG" ]; then
+            TAG="${INPUT_TAG#refs/tags/}"
+          else
+            TAG="${EVENT_REF#refs/tags/}"
+          fi
+          if [ -z "$TAG" ]; then
+            echo "::error::Tag name cannot be empty"
+            exit 1
+          fi
+          SAFE_TAG="$(printf '%s' "$TAG" | tr '/ :' '---')"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "safe_tag=$SAFE_TAG" >> "$GITHUB_OUTPUT"
+
+      - name: Checkout source
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Checkout target tag if it exists
+        env:
+          TARGET_TAG: ${{ steps.ref.outputs.tag }}
+        run: |
+          set -euo pipefail
+          git fetch --tags --force
+          if git rev-parse -q --verify "refs/tags/$TARGET_TAG" >/dev/null; then
+            echo "Checking out existing tag: $TARGET_TAG"
+            git checkout "refs/tags/$TARGET_TAG"
+          elif git rev-parse -q --verify "origin/$TARGET_TAG" >/dev/null; then
+            echo "Checking out existing branch/ref: $TARGET_TAG"
+            git checkout "$TARGET_TAG"
+          else
+            echo "Tag '$TARGET_TAG' does not exist yet; building from current ref ($GITHUB_REF_NAME) and creating release tag on publish."
+          fi
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Set up Gradle 9.5.0
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '9.5.0'
+
+      - name: Make gradlew executable
+        run: chmod +x ./gradlew
+
+      - name: Run release unit tests
+        run: ./gradlew testDebugUnitTest --no-daemon --stacktrace
+
+      - name: Assemble release APKs
+        run: ./gradlew assembleRelease --no-daemon --stacktrace
+
+      - name: Verify release APK exists
+        run: |
+          set -euo pipefail
+          ls -lh app/build/outputs/apk/release/
+          test -f app/build/outputs/apk/release/app-release-unsigned.apk || test $(ls -1 app/build/outputs/apk/release/*.apk 2>/dev/null | wc -l) -gt 0
+
+      - name: Prepare private signing key
+        env:
+          KEYSTORE_B64: ${{ secrets.SIGNING_KEYSTORE_BASE64 || secrets.KEYSTORE_BASE64 }}
+          STORE_PASSWORD: ${{ secrets.SIGNING_STORE_PASSWORD || secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.SIGNING_KEY_ALIAS || secrets.KEY_ALIAS }}
+        run: |
+          set -euo pipefail
+          if [ -z "$KEYSTORE_B64" ]; then
+            echo "::error::Missing SIGNING_KEYSTORE_BASE64 repository secret"
+            exit 1
+          fi
+          umask 077
+          printf '%s' "$KEYSTORE_B64" | base64 --decode > "$RUNNER_TEMP/ncm-converter-signing.p12"
+          test -s "$RUNNER_TEMP/ncm-converter-signing.p12"
+          : "${STORE_PASSWORD:?Missing SIGNING_STORE_PASSWORD secret}"
+          KEY_ALIAS="${KEY_ALIAS:-key0}"
+          keytool -list -storetype PKCS12 -keystore "$RUNNER_TEMP/ncm-converter-signing.p12" -storepass "$STORE_PASSWORD" -alias "$KEY_ALIAS" >/dev/null
+          echo "KEYSTORE_PATH=$RUNNER_TEMP/ncm-converter-signing.p12" >> "$GITHUB_ENV"
+
+      - name: Align, sign, verify, and checksum APKs
+        env:
+          STORE_PASSWORD: ${{ secrets.SIGNING_STORE_PASSWORD || secrets.KEYSTORE_PASSWORD }}
+          KEY_PASSWORD: ${{ secrets.SIGNING_KEY_PASSWORD || secrets.KEY_PASSWORD || secrets.SIGNING_STORE_PASSWORD || secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.SIGNING_KEY_ALIAS || secrets.KEY_ALIAS || 'key0' }}
+        run: |
+          set -euo pipefail
+          : "${STORE_PASSWORD:?Missing SIGNING_STORE_PASSWORD secret}"
+          KEY_PASSWORD="${KEY_PASSWORD:-$STORE_PASSWORD}"
+          KEY_ALIAS="${KEY_ALIAS:-key0}"
+          BUILD_TOOLS="$(find "$ANDROID_HOME/build-tools" -mindepth 1 -maxdepth 1 -type d | sort -V | tail -n 1)"
+          shopt -s nullglob
+          APKS=(app/build/outputs/apk/release/*.apk)
+          test "${#APKS[@]}" -gt 0
+          mkdir -p dist
+          : > dist/SHA256SUMS.txt
+          for APK in "${APKS[@]}"; do
+            BASENAME="$(basename "$APK")"
+            ABI_TAG="${BASENAME#app-}"
+            ABI_TAG="${ABI_TAG%-release-unsigned.apk}"
+            ABI_TAG="${ABI_TAG%-unsigned.apk}"
+            ABI_TAG="${ABI_TAG%.apk}"
+            if [ "$ABI_TAG" = "release" ]; then
+              SIGNED_NAME="NCM-Converter-${{ steps.ref.outputs.safe_tag }}-signed.apk"
+            else
+              SIGNED_NAME="NCM-Converter-${{ steps.ref.outputs.safe_tag }}-${ABI_TAG}-signed.apk"
+            fi
+            ALIGNED="dist/aligned-${ABI_TAG}.apk"
+            SIGNED="dist/${SIGNED_NAME}"
+            "$BUILD_TOOLS/zipalign" -f -p 4 "$APK" "$ALIGNED"
+            "$BUILD_TOOLS/apksigner" sign \
+              --ks "$KEYSTORE_PATH" \
+              --ks-type PKCS12 \
+              --ks-pass env:STORE_PASSWORD \
+              --key-pass env:KEY_PASSWORD \
+              --ks-key-alias "$KEY_ALIAS" \
+              --out "$SIGNED" "$ALIGNED"
+            "$BUILD_TOOLS/apksigner" verify --verbose --print-certs "$SIGNED"
+            rm -f "$ALIGNED"
+            (cd dist && sha256sum "$SIGNED_NAME" | tee -a SHA256SUMS.txt)
+          done
+
+      - name: Upload signed APK workflow artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ncm-converter-${{ steps.ref.outputs.safe_tag }}-signed
+          path: dist/*
+          if-no-files-found: error
+          retention-days: 90
+
+      - name: Remove temporary keystore
+        if: always()
+        run: rm -f "${{ runner.temp }}/ncm-converter-signing.p12"
+
+  publish:
+    name: Publish GitHub Release
+    needs: build-sign
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download signed APK artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: ncm-converter-${{ needs.build-sign.outputs.safe_tag }}-signed
+          path: dist
+
+      - name: Publish release and signed APK
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ needs.build-sign.outputs.tag }}
+          name: NCM-Converter ${{ needs.build-sign.outputs.tag }}
+          generate_release_notes: true
+          files: |
+            dist/*.apk
+            dist/SHA256SUMS.txt

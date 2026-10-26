@@ -182,7 +182,8 @@ jobs:
         with:
           tag_name: ${{ needs.build-sign.outputs.tag }}
           name: NCM-Converter ${{ needs.build-sign.outputs.tag }}
-          generate_release_notes: true
+          body: ""
+          generate_release_notes: false
           files: |
             dist/*.apk
             dist/SHA256SUMS.txt

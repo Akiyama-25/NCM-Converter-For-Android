@@ -12,8 +12,8 @@ android {
         applicationId = "Akari.Said.YuriBest"
         minSdk = 26
         targetSdk = 36
-        versionCode = 8
-        versionName = "release-0.8"
+        versionCode = 9
+        versionName = "release-0.9"
     }
 
     buildTypes {

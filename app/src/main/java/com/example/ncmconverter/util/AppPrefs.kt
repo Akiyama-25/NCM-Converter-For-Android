@@ -3,6 +3,7 @@ package com.example.ncmconverter.util
 import android.content.Context
 import android.content.SharedPreferences
 import android.os.Build
+import com.example.ncmconverter.ui.theme.SystemFontScanner
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -31,6 +32,7 @@ object AppPrefs {
     private const val KEY_PORTRAIT_GRID_ENABLED = "portrait_grid_enabled"
     private const val KEY_APP_LANGUAGE = "app_language"
     private const val KEY_USE_EMBEDDED_FONT = "use_embedded_font"
+    private const val KEY_SYSTEM_FONT_ID = "system_font_id"
     private const val KEY_FONT_WEIGHT = "font_weight"
     private const val KEY_CUSTOM_OUTPUT_URI = "custom_output_uri"
     private const val KEY_LOG_LEVEL = "log_level"
@@ -101,6 +103,9 @@ object AppPrefs {
     private val _useEmbeddedFontFlow = MutableStateFlow(false)
     val useEmbeddedFontFlow: StateFlow<Boolean> = _useEmbeddedFontFlow.asStateFlow()
 
+    private val _systemFontIdFlow = MutableStateFlow(SystemFontScanner.ID_SYSTEM_DEFAULT)
+    val systemFontIdFlow: StateFlow<String> = _systemFontIdFlow.asStateFlow()
+
     private val _fontWeightFlow = MutableStateFlow(400)
     val fontWeightFlow: StateFlow<Int> = _fontWeightFlow.asStateFlow()
 
@@ -126,10 +131,10 @@ object AppPrefs {
         _gridColumnsFlow.value = gridColumns
         _portraitGridEnabledFlow.value = portraitGridEnabled
         _useEmbeddedFontFlow.value = useEmbeddedFont
+        _systemFontIdFlow.value = systemFontId
         _fontWeightFlow.value = fontWeight
         _logLevelFlow.value = logLevel
         _logFormatFlow.value = logFormat
-        // Migrate old lyricMode to new booleans if needed
         migrateLyricMode()
     }
 
@@ -269,17 +274,26 @@ object AppPrefs {
         }
 
     var useEmbeddedFont: Boolean
-        get() = prefs.getBoolean(KEY_USE_EMBEDDED_FONT, true)
+        get() = prefs.getBoolean(KEY_USE_EMBEDDED_FONT, false)
         set(value) {
             prefs.edit().putBoolean(KEY_USE_EMBEDDED_FONT, value).apply()
             _useEmbeddedFontFlow.value = value
         }
 
+    var systemFontId: String
+        get() = prefs.getString(KEY_SYSTEM_FONT_ID, SystemFontScanner.ID_SYSTEM_DEFAULT)
+            ?: SystemFontScanner.ID_SYSTEM_DEFAULT
+        set(value) {
+            prefs.edit().putString(KEY_SYSTEM_FONT_ID, value).apply()
+            _systemFontIdFlow.value = value
+        }
+
     var fontWeight: Int
         get() = prefs.getInt(KEY_FONT_WEIGHT, 400)
         set(value) {
-            prefs.edit().putInt(KEY_FONT_WEIGHT, value.coerceIn(200, 900)).apply()
-            _fontWeightFlow.value = value.coerceIn(200, 900)
+            val clamped = value.coerceIn(100, 900)
+            prefs.edit().putInt(KEY_FONT_WEIGHT, clamped).apply()
+            _fontWeightFlow.value = clamped
         }
 
     var appLanguage: String

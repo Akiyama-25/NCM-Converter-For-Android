@@ -7,40 +7,30 @@ import android.widget.Toast
 import androidx.annotation.StringRes
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.ArrowDropDown
-import androidx.compose.material.icons.filled.BugReport
-import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.ContentCopy
-import androidx.compose.material.icons.filled.DeleteOutline
-import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.FolderOpen
-import androidx.compose.material.icons.filled.Info
-import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.material3.windowsizeclass.ExperimentalMaterial3WindowSizeClassApi
 import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.compose.material3.windowsizeclass.calculateWindowSizeClass
 import androidx.compose.runtime.*
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
-import com.example.ncmconverter.util.AppLogger
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -54,20 +44,26 @@ import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.documentfile.provider.DocumentFile
 import com.example.ncmconverter.R
 import com.example.ncmconverter.ui.theme.AppFontWeights
-import com.example.ncmconverter.ui.theme.RhrFontFamily
+import com.example.ncmconverter.ui.theme.SystemFontEntry
+import com.example.ncmconverter.ui.theme.SystemFontScanner
 import com.example.ncmconverter.ui.theme.colorToHsl
 import com.example.ncmconverter.ui.theme.hslToArgbLong
 import com.example.ncmconverter.ui.theme.hslToColor
+import com.example.ncmconverter.util.AppLogger
 import com.example.ncmconverter.util.AppPrefs
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 private data class ColorOption(@StringRes val labelRes: Int, val color: Color)
 
@@ -105,8 +101,6 @@ fun SettingsScreen(onBack: () -> Unit, onPickOutputFolder: () -> Unit = {}) {
     val activity = context as Activity
 
     var themeMode by remember { mutableStateOf(AppPrefs.themeMode) }
-    var customPath by remember { mutableStateOf(AppPrefs.customPath) }
-    var customOutputUri by remember { mutableStateOf(AppPrefs.customOutputUri) }
     var autoSave by remember { mutableStateOf(AppPrefs.autoSave) }
     var enableLyric by remember { mutableStateOf(AppPrefs.enableLyric) }
     var lyricEmbedOriginal by remember { mutableStateOf(AppPrefs.lyricEmbedOriginal) }
@@ -120,20 +114,34 @@ fun SettingsScreen(onBack: () -> Unit, onPickOutputFolder: () -> Unit = {}) {
     var lightBgColor by remember { mutableLongStateOf(AppPrefs.customLightBgColor) }
     var darkBgColor by remember { mutableLongStateOf(AppPrefs.customDarkBgColor) }
     var appLanguage by remember { mutableStateOf(AppPrefs.appLanguage) }
-    var useEmbeddedFont by remember { mutableStateOf(AppPrefs.useEmbeddedFont) }
+    val systemFontId by AppPrefs.systemFontIdFlow.collectAsState()
     var fontWeight by remember { mutableIntStateOf(AppPrefs.fontWeight) }
+
+    var systemFonts by remember { mutableStateOf(SystemFontScanner.getLogicalPresets()) }
+    var showFontPickerSheet by remember { mutableStateOf(false) }
+    var fontSearchQuery by remember { mutableStateOf("") }
+
+    LaunchedEffect(Unit) {
+        withContext(Dispatchers.IO) {
+            val scanned = SystemFontScanner.scanSystemFonts()
+            withContext(Dispatchers.Main) {
+                systemFonts = scanned
+            }
+        }
+    }
 
     val isDark = when (themeMode) {
         AppPrefs.THEME_DARK -> true
         AppPrefs.THEME_LIGHT -> false
         else -> {
             val nightMode = context.resources.configuration.uiMode and
-                    android.content.res.Configuration.UI_MODE_NIGHT_MASK
-            nightMode == android.content.res.Configuration.UI_MODE_NIGHT_YES
+                    Configuration.UI_MODE_NIGHT_MASK
+            nightMode == Configuration.UI_MODE_NIGHT_YES
         }
     }
 
     var showInstructionsDialog by remember { mutableStateOf(false) }
+    var showBlueprintDialog by remember { mutableStateOf(false) }
     var showColumnsDialog by remember { mutableStateOf(false) }
     var pendingColumns by remember { mutableIntStateOf(gridColumns) }
     var showLanguageChangeDialog by remember { mutableStateOf(false) }
@@ -174,7 +182,6 @@ fun SettingsScreen(onBack: () -> Unit, onPickOutputFolder: () -> Unit = {}) {
         }
     }
 
-    // Check if current language is Simplified Chinese
     val isSimplifiedChinese = remember(appLanguage) {
         when (appLanguage) {
             "zh-SC" -> true
@@ -189,33 +196,64 @@ fun SettingsScreen(onBack: () -> Unit, onPickOutputFolder: () -> Unit = {}) {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(stringResource(R.string.settings_title)) },
+                title = {
+                    Text(
+                        stringResource(R.string.settings_title),
+                        style = MaterialTheme.typography.titleLarge
+                    )
+                },
                 navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.Filled.ArrowBack, contentDescription = stringResource(R.string.settings_back))
+                    FilledTonalIconButton(
+                        onClick = onBack,
+                        modifier = Modifier
+                            .padding(start = 8.dp)
+                            .testTag("settings_back_button"),
+                        colors = IconButtonDefaults.filledTonalIconButtonColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+                        )
+                    ) {
+                        Icon(
+                            Icons.Filled.ArrowBack,
+                            contentDescription = stringResource(R.string.settings_back)
+                        )
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface)
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.surface
+                )
             )
         }
     ) { padding ->
         val settingsCols = if (appliedGridColumns <= 1) 1
-            else when (calculateWindowSizeClass(activity).widthSizeClass) {
-                WindowWidthSizeClass.Compact -> 1
-                else -> 2
-            }
+        else when (calculateWindowSizeClass(activity).widthSizeClass) {
+            WindowWidthSizeClass.Compact -> 1
+            else -> 2
+        }
+
         LazyVerticalGrid(
             columns = GridCells.Fixed(settingsCols),
-            modifier = Modifier.fillMaxSize().padding(padding),
-            contentPadding = PaddingValues(bottom = 32.dp)
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding),
+            contentPadding = PaddingValues(bottom = 36.dp)
         ) {
-            // ── Display ──
-            item(span = { GridItemSpan(maxLineSpan) }) { SectionHeader(stringResource(R.string.section_display)) }
+            // ── Display & M3E Theme ──
+            item(span = { GridItemSpan(maxLineSpan) }) {
+                SectionHeader(stringResource(R.string.section_display))
+            }
 
             item {
                 Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp)) {
-                    Text(stringResource(R.string.pref_theme_mode), fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Text(
+                        stringResource(R.string.pref_theme_mode),
+                        fontSize = 14.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
                         ThemeChip(stringResource(R.string.pref_theme_system), themeMode == AppPrefs.THEME_SYSTEM, isDark) {
                             themeMode = AppPrefs.THEME_SYSTEM; AppPrefs.themeMode = themeMode
                         }
@@ -231,7 +269,11 @@ fun SettingsScreen(onBack: () -> Unit, onPickOutputFolder: () -> Unit = {}) {
 
             item {
                 Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp)) {
-                    Text(stringResource(R.string.pref_language), fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(
+                        stringResource(R.string.pref_language),
+                        fontSize = 14.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                     LanguageDropdown(appLanguage, isDark) { code ->
                         if (code != appLanguage) {
                             appLanguage = code
@@ -245,7 +287,11 @@ fun SettingsScreen(onBack: () -> Unit, onPickOutputFolder: () -> Unit = {}) {
 
             item(span = { GridItemSpan(maxLineSpan) }) {
                 Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp)) {
-                    Text(stringResource(R.string.pref_grid_columns), fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(
+                        stringResource(R.string.pref_grid_columns),
+                        fontSize = 14.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         verticalAlignment = Alignment.CenterVertically,
@@ -266,7 +312,11 @@ fun SettingsScreen(onBack: () -> Unit, onPickOutputFolder: () -> Unit = {}) {
                             steps = 3,
                             modifier = Modifier.weight(1f)
                         )
-                        Text(stringResource(R.string.pref_grid_columns_value, gridColumns), fontSize = 14.sp, fontWeight = FontWeight.Medium)
+                        Text(
+                            stringResource(R.string.pref_grid_columns_value, gridColumns),
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Medium
+                        )
                     }
                 }
             }
@@ -279,44 +329,35 @@ fun SettingsScreen(onBack: () -> Unit, onPickOutputFolder: () -> Unit = {}) {
                 ) {
                     SettingSwitch(
                         title = stringResource(R.string.pref_portrait_grid),
-                        subtitle = stringResource(if (portraitGridEnabled) R.string.pref_portrait_grid_on else R.string.pref_portrait_grid_off),
+                        subtitle = stringResource(
+                            if (portraitGridEnabled) R.string.pref_portrait_grid_on else R.string.pref_portrait_grid_off
+                        ),
                         checked = portraitGridEnabled,
-                        onCheckedChange = { portraitGridEnabled = it; AppPrefs.portraitGridEnabled = it }
+                        onCheckedChange = {
+                            portraitGridEnabled = it
+                            AppPrefs.portraitGridEnabled = it
+                        }
                     )
                 }
             }
 
-            item(span = { GridItemSpan(maxLineSpan) }) {
-                val uriHandler = LocalUriHandler.current
-                FontSettingRow(
-                    useEmbeddedFont = useEmbeddedFont,
-                    onToggle = { useEmbeddedFont = it; AppPrefs.useEmbeddedFont = it },
-                    onLinkClick = { uriHandler.openUri("https://github.com/CyanoHao/Resource-Han-Rounded") }
-                )
-            }
-
-            item(key = "font_weight", span = { GridItemSpan(maxLineSpan) }) {
-                AnimatedVisibility(
-                    visible = useEmbeddedFont,
-                    enter = fadeIn(tween(300)) + expandVertically(tween(300)),
-                    exit = fadeOut(tween(200)) + shrinkVertically(tween(200))
-                ) {
-                    val rawIndex = AppFontWeights.indexOfFirst { it.first.weight == fontWeight }
-                    val weightIndex = if (rawIndex >= 0) rawIndex else 2
-                    Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp)) {
-                        Slider(
-                            value = weightIndex.toFloat(),
-                            onValueChange = { idx ->
-                                val newWeight = AppFontWeights[idx.toInt()].first.weight
-                                fontWeight = newWeight
-                                AppPrefs.fontWeight = newWeight
-                            },
-                            valueRange = 0f..(AppFontWeights.size - 1).toFloat(),
-                            steps = AppFontWeights.size - 2,
-                            modifier = Modifier.fillMaxWidth()
-                        )
+            // ── FlClash-Style System Installed Font Selector & Weight Control ──
+            item(key = "system_font_card", span = { GridItemSpan(maxLineSpan) }) {
+                SystemFontSettingCard(
+                    selectedFontId = systemFontId,
+                    fontWeight = fontWeight,
+                    scannedCount = systemFonts.size,
+                    onOpenPicker = { showFontPickerSheet = true },
+                    onWeightChanged = { newW ->
+                        fontWeight = newW
+                        AppPrefs.fontWeight = newW
+                    },
+                    onResetDefault = {
+                        AppPrefs.systemFontId = SystemFontScanner.ID_SYSTEM_DEFAULT
+                        fontWeight = 400
+                        AppPrefs.fontWeight = 400
                     }
-                }
+                )
             }
 
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
@@ -360,7 +401,12 @@ fun SettingsScreen(onBack: () -> Unit, onPickOutputFolder: () -> Unit = {}) {
                     exit = fadeOut(tween(200)) + shrinkVertically(tween(200))
                 ) {
                     Column {
-                        Text(stringResource(R.string.pref_accent_color), modifier = Modifier.padding(start = 16.dp, top = 12.dp), fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(
+                            stringResource(R.string.pref_accent_color),
+                            modifier = Modifier.padding(start = 16.dp, top = 12.dp),
+                            fontSize = 13.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
                         ColorPickerRow(
                             colors = AccentColors,
                             selectedColor = Color(accentColor.toInt()),
@@ -379,7 +425,12 @@ fun SettingsScreen(onBack: () -> Unit, onPickOutputFolder: () -> Unit = {}) {
                                 showHslSheet = true
                             }
                         )
-                        Text(stringResource(R.string.pref_bg_color), modifier = Modifier.padding(start = 16.dp, top = 12.dp), fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(
+                            stringResource(R.string.pref_bg_color),
+                            modifier = Modifier.padding(start = 16.dp, top = 12.dp),
+                            fontSize = 13.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
                         ColorPickerRow(
                             colors = if (isDark) DarkBgColors else LightBgColors,
                             selectedColor = Color(if (isDark) darkBgColor else lightBgColor),
@@ -408,10 +459,13 @@ fun SettingsScreen(onBack: () -> Unit, onPickOutputFolder: () -> Unit = {}) {
             }
 
             // ── Conversion ──
-            item(span = { GridItemSpan(maxLineSpan) }) { HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp)) }
-            item(span = { GridItemSpan(maxLineSpan) }) { SectionHeader(stringResource(R.string.section_convert)) }
+            item(span = { GridItemSpan(maxLineSpan) }) {
+                HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+            }
+            item(span = { GridItemSpan(maxLineSpan) }) {
+                SectionHeader(stringResource(R.string.section_convert))
+            }
 
-            // Output folder picker
             item(span = { GridItemSpan(maxLineSpan) }) {
                 Row(
                     modifier = Modifier
@@ -428,7 +482,11 @@ fun SettingsScreen(onBack: () -> Unit, onPickOutputFolder: () -> Unit = {}) {
                     )
                     Spacer(modifier = Modifier.width(12.dp))
                     Column(modifier = Modifier.weight(1f)) {
-                        Text(stringResource(R.string.pref_save_path), fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurface)
+                        Text(
+                            stringResource(R.string.pref_save_path),
+                            fontSize = 14.sp,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
                         Text(
                             outputFolderName,
                             fontSize = 11.sp,
@@ -457,10 +515,13 @@ fun SettingsScreen(onBack: () -> Unit, onPickOutputFolder: () -> Unit = {}) {
             }
 
             // ── Lyrics ──
-            item(span = { GridItemSpan(maxLineSpan) }) { HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp)) }
-            item(span = { GridItemSpan(maxLineSpan) }) { SectionHeader(stringResource(R.string.section_lyrics)) }
+            item(span = { GridItemSpan(maxLineSpan) }) {
+                HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+            }
+            item(span = { GridItemSpan(maxLineSpan) }) {
+                SectionHeader(stringResource(R.string.section_lyrics))
+            }
 
-            // Auto embed lyrics switch (built-in API works out-of-the-box)
             item {
                 SettingSwitch(
                     title = stringResource(R.string.pref_auto_lyric),
@@ -470,7 +531,6 @@ fun SettingsScreen(onBack: () -> Unit, onPickOutputFolder: () -> Unit = {}) {
                 )
             }
 
-            // Original lyric switch (visible when lyric enabled)
             item {
                 AnimatedVisibility(
                     visible = enableLyric,
@@ -479,14 +539,15 @@ fun SettingsScreen(onBack: () -> Unit, onPickOutputFolder: () -> Unit = {}) {
                 ) {
                     SettingSwitch(
                         title = stringResource(R.string.pref_lyric_original),
-                        subtitle = stringResource(if (lyricEmbedOriginal) R.string.pref_lyric_original_on else R.string.pref_lyric_original_off),
+                        subtitle = stringResource(
+                            if (lyricEmbedOriginal) R.string.pref_lyric_original_on else R.string.pref_lyric_original_off
+                        ),
                         checked = lyricEmbedOriginal,
                         onCheckedChange = { lyricEmbedOriginal = it; AppPrefs.lyricEmbedOriginal = it }
                     )
                 }
             }
 
-            // Translated lyric switch (visible when lyric enabled)
             item {
                 AnimatedVisibility(
                     visible = enableLyric,
@@ -497,7 +558,8 @@ fun SettingsScreen(onBack: () -> Unit, onPickOutputFolder: () -> Unit = {}) {
                         if (isSimplifiedChinese) {
                             stringResource(R.string.pref_lyric_translated_on)
                         } else {
-                            stringResource(R.string.pref_lyric_translated_on) + " " + stringResource(R.string.pref_lyric_translated_note)
+                            stringResource(R.string.pref_lyric_translated_on) + " " +
+                                stringResource(R.string.pref_lyric_translated_note)
                         }
                     } else {
                         stringResource(R.string.pref_lyric_translated_off)
@@ -512,10 +574,13 @@ fun SettingsScreen(onBack: () -> Unit, onPickOutputFolder: () -> Unit = {}) {
             }
 
             // ── Debug ──
-            item(span = { GridItemSpan(maxLineSpan) }) { HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp)) }
-            item(span = { GridItemSpan(maxLineSpan) }) { SectionHeader(stringResource(R.string.section_debug)) }
+            item(span = { GridItemSpan(maxLineSpan) }) {
+                HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+            }
+            item(span = { GridItemSpan(maxLineSpan) }) {
+                SectionHeader(stringResource(R.string.section_debug))
+            }
 
-            // 日志查看与导出
             item(span = { GridItemSpan(maxLineSpan) }) {
                 Row(
                     modifier = Modifier
@@ -532,16 +597,27 @@ fun SettingsScreen(onBack: () -> Unit, onPickOutputFolder: () -> Unit = {}) {
                     )
                     Spacer(modifier = Modifier.width(12.dp))
                     Column(modifier = Modifier.weight(1f)) {
-                        Text(stringResource(R.string.pref_log), fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurface)
-                        Text(stringResource(R.string.pref_log_desc), fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(
+                            stringResource(R.string.pref_log),
+                            fontSize = 14.sp,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        Text(
+                            stringResource(R.string.pref_log_desc),
+                            fontSize = 11.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
                     }
                 }
             }
 
-            // 日志级别
             item {
                 Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp)) {
-                    Text(stringResource(R.string.pref_log_level), fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(
+                        stringResource(R.string.pref_log_level),
+                        fontSize = 14.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                     LogLevelDropdown(logLevel) { level ->
                         logLevel = level
                         AppPrefs.logLevel = level
@@ -549,10 +625,13 @@ fun SettingsScreen(onBack: () -> Unit, onPickOutputFolder: () -> Unit = {}) {
                 }
             }
 
-            // 日志格式
             item {
                 Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp)) {
-                    Text(stringResource(R.string.pref_log_format), fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(
+                        stringResource(R.string.pref_log_format),
+                        fontSize = 14.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                     LogFormatDropdown(logFormat) { format ->
                         logFormat = format
                         AppPrefs.logFormat = format
@@ -560,9 +639,45 @@ fun SettingsScreen(onBack: () -> Unit, onPickOutputFolder: () -> Unit = {}) {
                 }
             }
 
-            // ── About ──
-            item(span = { GridItemSpan(maxLineSpan) }) { HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp)) }
-            item(span = { GridItemSpan(maxLineSpan) }) { SectionHeader(stringResource(R.string.section_about)) }
+            // ── About & Flutter Migration Blueprint ──
+            item(span = { GridItemSpan(maxLineSpan) }) {
+                HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+            }
+            item(span = { GridItemSpan(maxLineSpan) }) {
+                SectionHeader(stringResource(R.string.section_about))
+            }
+
+            item(span = { GridItemSpan(maxLineSpan) }) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { showBlueprintDialog = true }
+                        .padding(horizontal = 16.dp, vertical = 12.dp)
+                        .testTag("settings_flutter_blueprint_row"),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        Icons.Filled.Devices,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(20.dp)
+                    )
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Column {
+                        Text(
+                            stringResource(R.string.pref_flutter_blueprint),
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        Text(
+                            stringResource(R.string.pref_flutter_blueprint_desc),
+                            fontSize = 11.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+            }
 
             item(span = { GridItemSpan(maxLineSpan) }) {
                 Row(
@@ -580,8 +695,16 @@ fun SettingsScreen(onBack: () -> Unit, onPickOutputFolder: () -> Unit = {}) {
                     )
                     Spacer(modifier = Modifier.width(12.dp))
                     Column {
-                        Text(stringResource(R.string.pref_instructions), fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurface)
-                        Text(stringResource(R.string.pref_instructions_desc), fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(
+                            stringResource(R.string.pref_instructions),
+                            fontSize = 14.sp,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        Text(
+                            stringResource(R.string.pref_instructions_desc),
+                            fontSize = 11.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
                     }
                 }
             }
@@ -612,6 +735,176 @@ fun SettingsScreen(onBack: () -> Unit, onPickOutputFolder: () -> Unit = {}) {
         }
     }
 
+    // ── FlClash-Style System Installed Font Picker ModalBottomSheet ──
+    if (showFontPickerSheet) {
+        val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+        val filteredFonts = remember(systemFonts, fontSearchQuery) {
+            if (fontSearchQuery.isBlank()) systemFonts
+            else systemFonts.filter {
+                it.displayName.contains(fontSearchQuery, ignoreCase = true) ||
+                    it.subtitle.contains(fontSearchQuery, ignoreCase = true)
+            }
+        }
+
+        ModalBottomSheet(
+            onDismissRequest = { showFontPickerSheet = false },
+            sheetState = sheetState,
+            containerColor = MaterialTheme.colorScheme.surfaceContainerLow
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .fillMaxHeight(0.82f)
+                    .padding(horizontal = 20.dp)
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = stringResource(R.string.font_picker_title),
+                            style = MaterialTheme.typography.titleMedium,
+                            fontSize = 17.sp
+                        )
+                        Text(
+                            text = stringResource(R.string.font_scanned_count, systemFonts.size),
+                            fontSize = 12.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    TextButton(
+                        onClick = {
+                            AppPrefs.systemFontId = SystemFontScanner.ID_SYSTEM_DEFAULT
+                            fontWeight = 400
+                            AppPrefs.fontWeight = 400
+                        }
+                    ) {
+                        Text(stringResource(R.string.font_reset_default))
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(10.dp))
+
+                OutlinedTextField(
+                    value = fontSearchQuery,
+                    onValueChange = { fontSearchQuery = it },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .testTag("system_font_search_input"),
+                    placeholder = { Text(stringResource(R.string.font_search_hint), fontSize = 13.sp) },
+                    leadingIcon = { Icon(Icons.Filled.Search, contentDescription = null) },
+                    trailingIcon = if (fontSearchQuery.isNotEmpty()) {
+                        {
+                            IconButton(onClick = { fontSearchQuery = "" }) {
+                                Icon(Icons.Filled.Clear, contentDescription = null)
+                            }
+                        }
+                    } else null,
+                    singleLine = true,
+                    shape = RoundedCornerShape(16.dp)
+                )
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                LazyColumn(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    contentPadding = PaddingValues(bottom = 28.dp)
+                ) {
+                    items(filteredFonts, key = { it.id }) { entry ->
+                        val isSelected = entry.id == systemFontId
+                        val itemFontFamily = remember(entry.id) {
+                            SystemFontScanner.resolveFontFamily(entry.id)
+                        }
+
+                        Surface(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(16.dp))
+                                .clickable {
+                                    AppPrefs.systemFontId = entry.id
+                                },
+                            shape = RoundedCornerShape(16.dp),
+                            color = if (isSelected) {
+                                MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.75f)
+                            } else {
+                                MaterialTheme.colorScheme.surfaceContainerHigh
+                            },
+                            border = if (isSelected) {
+                                BorderStroke(1.5.dp, MaterialTheme.colorScheme.primary)
+                            } else null
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 14.dp, vertical = 12.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Text(
+                                            text = entry.displayName,
+                                            fontFamily = itemFontFamily,
+                                            fontWeight = FontWeight(fontWeight.coerceIn(100, 900)),
+                                            fontSize = 15.sp,
+                                            color = MaterialTheme.colorScheme.onSurface,
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis
+                                        )
+                                        if (entry.isBuiltInLogical) {
+                                            Spacer(modifier = Modifier.width(6.dp))
+                                            Surface(
+                                                shape = RoundedCornerShape(6.dp),
+                                                color = MaterialTheme.colorScheme.secondaryContainer
+                                            ) {
+                                                Text(
+                                                    text = "OS",
+                                                    fontSize = 9.sp,
+                                                    color = MaterialTheme.colorScheme.onSecondaryContainer,
+                                                    modifier = Modifier.padding(horizontal = 5.dp, vertical = 1.dp)
+                                                )
+                                            }
+                                        }
+                                    }
+                                    Spacer(modifier = Modifier.height(2.dp))
+                                    Text(
+                                        text = stringResource(R.string.font_preview_sample),
+                                        fontFamily = itemFontFamily,
+                                        fontWeight = FontWeight(fontWeight.coerceIn(100, 900)),
+                                        fontSize = 13.sp,
+                                        color = MaterialTheme.colorScheme.primary
+                                    )
+                                    Text(
+                                        text = entry.subtitle,
+                                        fontSize = 10.sp,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis
+                                    )
+                                }
+
+                                if (isSelected) {
+                                    Icon(
+                                        Icons.Filled.CheckCircle,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier.size(22.dp)
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    if (showBlueprintDialog) {
+        FlutterBlueprintDialog(onDismiss = { showBlueprintDialog = false })
+    }
+
     if (showColumnsDialog) {
         AlertDialog(
             onDismissRequest = {
@@ -638,7 +931,7 @@ fun SettingsScreen(onBack: () -> Unit, onPickOutputFolder: () -> Unit = {}) {
     if (showLanguageChangeDialog) {
         val targetContext = remember(pendingLanguageCode) {
             val locale = if (pendingLanguageCode == "system") java.util.Locale.getDefault()
-                         else java.util.Locale.forLanguageTag(pendingLanguageCode)
+            else java.util.Locale.forLanguageTag(pendingLanguageCode)
             val config = Configuration(context.resources.configuration).apply {
                 this.locale = locale
             }
@@ -661,7 +954,7 @@ fun SettingsScreen(onBack: () -> Unit, onPickOutputFolder: () -> Unit = {}) {
             try {
                 context.resources.openRawResource(R.raw.app_instructions)
                     .bufferedReader().use { it.readText() }
-            } catch (e: Exception) {
+            } catch (_: Exception) {
                 context.getString(R.string.instructions_load_failed)
             }
         }
@@ -676,7 +969,9 @@ fun SettingsScreen(onBack: () -> Unit, onPickOutputFolder: () -> Unit = {}) {
                 )
             },
             confirmButton = {
-                TextButton(onClick = { showInstructionsDialog = false }) { Text(stringResource(R.string.instructions_close)) }
+                TextButton(onClick = { showInstructionsDialog = false }) {
+                    Text(stringResource(R.string.instructions_close))
+                }
             }
         )
     }
@@ -710,7 +1005,9 @@ fun SettingsScreen(onBack: () -> Unit, onPickOutputFolder: () -> Unit = {}) {
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Text(
-                    text = stringResource(if (hslTarget == HslTarget.ACCENT) R.string.pref_custom_hsl_accent else R.string.pref_custom_hsl_bg),
+                    text = stringResource(
+                        if (hslTarget == HslTarget.ACCENT) R.string.pref_custom_hsl_accent else R.string.pref_custom_hsl_bg
+                    ),
                     fontSize = 18.sp,
                     fontWeight = FontWeight.SemiBold,
                     modifier = Modifier.padding(bottom = 16.dp)
@@ -778,8 +1075,16 @@ fun SettingsScreen(onBack: () -> Unit, onPickOutputFolder: () -> Unit = {}) {
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text(stringResource(R.string.log_dialog_title), fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
-                    Text("($logLevel · .$logFormat)", fontSize = 12.sp, color = MaterialTheme.colorScheme.primary)
+                    Text(
+                        stringResource(R.string.log_dialog_title),
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                    Text(
+                        "($logLevel · .$logFormat)",
+                        fontSize = 12.sp,
+                        color = MaterialTheme.colorScheme.primary
+                    )
                 }
             },
             text = {
@@ -819,7 +1124,11 @@ fun SettingsScreen(onBack: () -> Unit, onPickOutputFolder: () -> Unit = {}) {
                             onClick = {
                                 AppLogger.clearLogs()
                                 logText = AppLogger.getLogContent(context, logLevel, logFormat)
-                                Toast.makeText(context, context.getString(R.string.log_clear_confirm), Toast.LENGTH_SHORT).show()
+                                Toast.makeText(
+                                    context,
+                                    context.getString(R.string.log_clear_confirm),
+                                    Toast.LENGTH_SHORT
+                                ).show()
                             },
                             modifier = Modifier.weight(1f),
                             contentPadding = PaddingValues(horizontal = 4.dp, vertical = 8.dp)
@@ -865,13 +1174,180 @@ fun SettingsScreen(onBack: () -> Unit, onPickOutputFolder: () -> Unit = {}) {
 }
 
 @Composable
+private fun SystemFontSettingCard(
+    selectedFontId: String,
+    fontWeight: Int,
+    scannedCount: Int,
+    onOpenPicker: () -> Unit,
+    onWeightChanged: (Int) -> Unit,
+    onResetDefault: () -> Unit
+) {
+    val activeFontName = remember(selectedFontId, scannedCount) {
+        SystemFontScanner.getDisplayName(selectedFontId)
+    }
+    val rawWeightIndex = AppFontWeights.indexOfFirst { it.first.weight == fontWeight }
+    val weightIndex = if (rawWeightIndex >= 0) rawWeightIndex else 3 // 400 Regular
+    val weightLabel = AppFontWeights.getOrNull(weightIndex)?.second ?: "Regular ($fontWeight)"
+
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 8.dp)
+            .testTag("system_font_setting_card"),
+        shape = RoundedCornerShape(22.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainerLow
+        ),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp)
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(14.dp))
+                    .clickable { onOpenPicker() }
+                    .padding(vertical = 4.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(
+                    modifier = Modifier.weight(1f),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Surface(
+                        shape = RoundedCornerShape(12.dp),
+                        color = MaterialTheme.colorScheme.primaryContainer,
+                        modifier = Modifier.size(42.dp)
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Icon(
+                                Icons.Filled.FontDownload,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                                modifier = Modifier.size(22.dp)
+                            )
+                        }
+                    }
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Column {
+                        Text(
+                            text = stringResource(R.string.pref_font),
+                            style = MaterialTheme.typography.titleSmall,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        Text(
+                            text = stringResource(R.string.font_scanned_count, scannedCount),
+                            fontSize = 11.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+
+                Surface(
+                    shape = RoundedCornerShape(12.dp),
+                    color = MaterialTheme.colorScheme.secondaryContainer
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = activeFontName,
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = MaterialTheme.colorScheme.onSecondaryContainer,
+                            maxLines = 1
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Icon(
+                            Icons.Filled.UnfoldMore,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSecondaryContainer,
+                            modifier = Modifier.size(16.dp)
+                        )
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(10.dp))
+
+            // Live Typography Preview Box
+            Surface(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { onOpenPicker() },
+                shape = RoundedCornerShape(14.dp),
+                color = MaterialTheme.colorScheme.surfaceContainerHigh
+            ) {
+                Text(
+                    text = stringResource(R.string.font_preview_sample),
+                    fontSize = 14.sp,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp)
+                )
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // Font Weight Step Slider (100..900)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = stringResource(R.string.font_weight),
+                    fontSize = 13.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = weightLabel,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                    if (selectedFontId != SystemFontScanner.ID_SYSTEM_DEFAULT || fontWeight != 400) {
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = stringResource(R.string.font_reset_default),
+                            fontSize = 11.sp,
+                            color = MaterialTheme.colorScheme.secondary,
+                            modifier = Modifier.clickable { onResetDefault() }
+                        )
+                    }
+                }
+            }
+
+            Slider(
+                value = weightIndex.toFloat(),
+                onValueChange = { idx ->
+                    val newWeight = AppFontWeights[idx.toInt().coerceIn(0, AppFontWeights.lastIndex)].first.weight
+                    onWeightChanged(newWeight)
+                },
+                valueRange = 0f..(AppFontWeights.size - 1).toFloat(),
+                steps = AppFontWeights.size - 2,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .testTag("font_weight_slider")
+            )
+        }
+    }
+}
+
+@Composable
 private fun SectionHeader(title: String) {
     Text(
         title,
         modifier = Modifier.padding(start = 16.dp, top = 12.dp, bottom = 4.dp),
-        fontSize = 20.sp, fontWeight = FontWeight.SemiBold,
+        fontSize = 18.sp,
+        fontWeight = FontWeight.SemiBold,
         color = MaterialTheme.colorScheme.primary,
-        letterSpacing = 1.sp
+        letterSpacing = 0.5.sp
     )
 }
 
@@ -945,20 +1421,30 @@ private fun ColorPickerRow(
 @Composable
 private fun RowScope.ThemeChip(label: String, selected: Boolean, isDark: Boolean, onClick: () -> Unit) {
     FilterChip(
-        selected = selected, onClick = onClick,
-        label = { Text(label, fontSize = 14.sp) },
+        selected = selected,
+        onClick = onClick,
+        label = { Text(label, fontSize = 13.sp) },
         modifier = Modifier.weight(1f),
+        shape = RoundedCornerShape(12.dp),
         colors = FilterChipDefaults.filterChipColors(
-            selectedContainerColor = if (isDark) Color(0xFFD0BCFF) else Color(0xFF6750A4),
-            selectedLabelColor = if (isDark) Color(0xFF381E72) else Color.White
+            selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+            selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer
         )
     )
 }
 
 @Composable
-private fun SettingSwitch(title: String, subtitle: String, checked: Boolean, onCheckedChange: (Boolean) -> Unit) {
+private fun SettingSwitch(
+    title: String,
+    subtitle: String,
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit
+) {
     Row(
-        modifier = Modifier.fillMaxWidth().clickable { onCheckedChange(!checked) }.padding(horizontal = 16.dp, vertical = 10.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onCheckedChange(!checked) }
+            .padding(horizontal = 16.dp, vertical = 10.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -967,50 +1453,6 @@ private fun SettingSwitch(title: String, subtitle: String, checked: Boolean, onC
             Text(subtitle, fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
         Switch(checked = checked, onCheckedChange = onCheckedChange)
-    }
-}
-
-@Composable
-private fun FontSettingRow(
-    useEmbeddedFont: Boolean,
-    onToggle: (Boolean) -> Unit,
-    onLinkClick: () -> Unit
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable { onToggle(!useEmbeddedFont) }
-            .padding(horizontal = 16.dp, vertical = 10.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                stringResource(R.string.pref_font),
-                fontSize = 14.sp,
-                color = MaterialTheme.colorScheme.onSurface,
-                fontFamily = if (useEmbeddedFont) RhrFontFamily else FontFamily.Default
-            )
-            if (useEmbeddedFont) {
-                Text(
-                    text = stringResource(R.string.font_embedded),
-                    fontSize = 11.sp,
-                    color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.clickable(
-                        interactionSource = remember { MutableInteractionSource() },
-                        indication = null
-                    ) { onLinkClick() },
-                    fontFamily = RhrFontFamily
-                )
-            } else {
-                Text(
-                    stringResource(R.string.font_system),
-                    fontSize = 11.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-        }
-        Switch(checked = useEmbeddedFont, onCheckedChange = onToggle)
     }
 }
 

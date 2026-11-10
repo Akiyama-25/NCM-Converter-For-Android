@@ -72,10 +72,22 @@
     <string name="pref_hsl_saturation">Saturation</string>
 
     <!-- Font -->
-    <string name="pref_font">Font</string>
-    <string name="font_system">System default</string>
-    <string name="font_embedded">Resource Han Round</string>
+    <string name="pref_font">System Font Family</string>
+    <string name="font_system">System Default</string>
+    <string name="font_embedded">System Installed Fonts</string>
     <string name="font_weight">Font Weight</string>
+    <string name="font_picker_title">Select System Installed Font</string>
+    <string name="font_search_hint">Search installed system fonts…</string>
+    <string name="font_scanned_count">%1$d system font families detected (0 MB bundled)</string>
+    <string name="font_preview_sample">AaBbCc 永 网易云音乐 NCM 123</string>
+    <string name="font_reset_default">Reset Default</string>
+    <string name="home_stats_total">Queued</string>
+    <string name="home_stats_done">Completed</string>
+    <string name="home_stats_pending">Pending</string>
+    <string name="home_m3e_badge">M3E · System Font</string>
+    <string name="pref_flutter_blueprint">Flutter 3-Platform Migration Plan</string>
+    <string name="pref_flutter_blueprint_desc">View Android / Windows / iOS M3E &amp; Isolate architecture</string>
+    <string name="blueprint_copied">Migration blueprint copied to clipboard</string>
     <string name="lang_change_title">Language Changed</string>
     <string name="lang_change_message">Please return to the main page to apply the new language.</string>
     <string name="lang_change_confirm">OK</string>

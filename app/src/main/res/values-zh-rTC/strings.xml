@@ -72,10 +72,22 @@
     <string name="pref_hsl_saturation">飽和度</string>
 
     <!-- Font -->
-    <string name="pref_font">字型</string>
-    <string name="font_system">系統預設</string>
-    <string name="font_embedded">Resource Han Round</string>
-    <string name="font_weight">字重</string>
+    <string name="pref_font">系統已安裝字型</string>
+    <string name="font_system">系統預設字型</string>
+    <string name="font_embedded">讀取本機系統字型</string>
+    <string name="font_weight">全域字重調節</string>
+    <string name="font_picker_title">選擇系統已安裝字型 (FlClash 風格)</string>
+    <string name="font_search_hint">搜尋本機已安裝字型名稱…</string>
+    <string name="font_scanned_count">已掃描到 %1$d 款本機系統字型（零內嵌字型包）</string>
+    <string name="font_preview_sample">AaBbCc 永 網易雲音樂 NCM 轉換器 123</string>
+    <string name="font_reset_default">恢復預設</string>
+    <string name="home_stats_total">佇列總數</string>
+    <string name="home_stats_done">已完成</string>
+    <string name="home_stats_pending">待處理</string>
+    <string name="home_m3e_badge">M3E · 系統字型</string>
+    <string name="pref_flutter_blueprint">Flutter 三端移植方案藍圖</string>
+    <string name="pref_flutter_blueprint_desc">檢視 Android / Windows / iOS 跨端架構與 Isolate 程式碼</string>
+    <string name="blueprint_copied">Flutter 移植方案已複製到剪貼簿</string>
     <string name="lang_change_title">語言已變更</string>
     <string name="lang_change_message">返回主頁面後將套用新語言。</string>
     <string name="lang_change_confirm">好的</string>

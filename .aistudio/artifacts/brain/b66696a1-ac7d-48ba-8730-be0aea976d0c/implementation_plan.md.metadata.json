@@ -1,0 +1,6 @@
+{
+  "summary":  "NCM 转换器 Flutter 三端（Android / Windows / iOS）跨平台移植方案与现有 Android 端 M3E（Material 3 Expressive）及系统已装字体动态扫描切换升级架构方案。涵盖纯 Dart + Isolate 多线程解密与元数据引擎、参考 FlClash 的 M3E 自适应导航与卡片设计、三端系统字体枚举与字重调节机制，以及现有 Android 工程同步升级实施蓝图。",
+  "updatedAt":  "2026-11-10T03:26:47.490418114Z",
+  "requestFeedback":  true,
+  "userFacing":  true
+}

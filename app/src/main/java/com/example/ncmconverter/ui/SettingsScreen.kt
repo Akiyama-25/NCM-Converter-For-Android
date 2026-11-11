@@ -48,6 +48,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
@@ -141,7 +142,6 @@ fun SettingsScreen(onBack: () -> Unit, onPickOutputFolder: () -> Unit = {}) {
     }
 
     var showInstructionsDialog by remember { mutableStateOf(false) }
-    var showBlueprintDialog by remember { mutableStateOf(false) }
     var showColumnsDialog by remember { mutableStateOf(false) }
     var pendingColumns by remember { mutableIntStateOf(gridColumns) }
     var showLanguageChangeDialog by remember { mutableStateOf(false) }
@@ -249,10 +249,11 @@ fun SettingsScreen(onBack: () -> Unit, onPickOutputFolder: () -> Unit = {}) {
                         fontSize = 14.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Row(
+                    Spacer(modifier = Modifier.height(6.dp))
+                    AdaptiveControlsRow(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        horizontalSpacing = 6.dp,
+                        verticalSpacing = 6.dp
                     ) {
                         ThemeChip(stringResource(R.string.pref_theme_system), themeMode == AppPrefs.THEME_SYSTEM, isDark) {
                             themeMode = AppPrefs.THEME_SYSTEM; AppPrefs.themeMode = themeMode
@@ -639,44 +640,12 @@ fun SettingsScreen(onBack: () -> Unit, onPickOutputFolder: () -> Unit = {}) {
                 }
             }
 
-            // ── About & Flutter Migration Blueprint ──
+            // ── About ──
             item(span = { GridItemSpan(maxLineSpan) }) {
                 HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
             }
             item(span = { GridItemSpan(maxLineSpan) }) {
                 SectionHeader(stringResource(R.string.section_about))
-            }
-
-            item(span = { GridItemSpan(maxLineSpan) }) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable { showBlueprintDialog = true }
-                        .padding(horizontal = 16.dp, vertical = 12.dp)
-                        .testTag("settings_flutter_blueprint_row"),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(
-                        Icons.Filled.Devices,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(20.dp)
-                    )
-                    Spacer(modifier = Modifier.width(12.dp))
-                    Column {
-                        Text(
-                            stringResource(R.string.pref_flutter_blueprint),
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.Medium,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-                        Text(
-                            stringResource(R.string.pref_flutter_blueprint_desc),
-                            fontSize = 11.sp,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                }
             }
 
             item(span = { GridItemSpan(maxLineSpan) }) {
@@ -901,10 +870,6 @@ fun SettingsScreen(onBack: () -> Unit, onPickOutputFolder: () -> Unit = {}) {
         }
     }
 
-    if (showBlueprintDialog) {
-        FlutterBlueprintDialog(onDismiss = { showBlueprintDialog = false })
-    }
-
     if (showColumnsDialog) {
         AlertDialog(
             onDismissRequest = {
@@ -950,9 +915,18 @@ fun SettingsScreen(onBack: () -> Unit, onPickOutputFolder: () -> Unit = {}) {
     }
 
     if (showInstructionsDialog) {
-        val instructionsText = remember {
+        val instructionsText = remember(appLanguage) {
             try {
-                context.resources.openRawResource(R.raw.app_instructions)
+                val resContext = if (appLanguage == "system") {
+                    context
+                } else {
+                    val locale = java.util.Locale.forLanguageTag(appLanguage)
+                    val config = Configuration(context.resources.configuration).apply {
+                        setLocale(locale)
+                    }
+                    context.createConfigurationContext(config)
+                }
+                resContext.resources.openRawResource(R.raw.app_instructions)
                     .bufferedReader().use { it.readText() }
             } catch (_: Exception) {
                 context.getString(R.string.instructions_load_failed)
@@ -1115,10 +1089,10 @@ fun SettingsScreen(onBack: () -> Unit, onPickOutputFolder: () -> Unit = {}) {
 
                     Spacer(modifier = Modifier.height(12.dp))
 
-                    Row(
+                    AdaptiveControlsRow(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalAlignment = Alignment.CenterVertically
+                        horizontalSpacing = 8.dp,
+                        verticalSpacing = 8.dp
                     ) {
                         OutlinedButton(
                             onClick = {
@@ -1130,36 +1104,51 @@ fun SettingsScreen(onBack: () -> Unit, onPickOutputFolder: () -> Unit = {}) {
                                     Toast.LENGTH_SHORT
                                 ).show()
                             },
-                            modifier = Modifier.weight(1f),
-                            contentPadding = PaddingValues(horizontal = 4.dp, vertical = 8.dp)
+                            modifier = Modifier.heightIn(min = 42.dp),
+                            contentPadding = PaddingValues(horizontal = 10.dp, vertical = 8.dp)
                         ) {
                             Icon(Icons.Filled.DeleteOutline, contentDescription = null, modifier = Modifier.size(16.dp))
                             Spacer(modifier = Modifier.width(4.dp))
-                            Text(stringResource(R.string.log_action_clear), fontSize = 12.sp)
+                            Text(
+                                text = stringResource(R.string.log_action_clear),
+                                fontSize = 12.sp,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
                         }
 
                         OutlinedButton(
                             onClick = {
                                 AppLogger.copyToClipboard(context, logLevel, logFormat)
                             },
-                            modifier = Modifier.weight(1f),
-                            contentPadding = PaddingValues(horizontal = 4.dp, vertical = 8.dp)
+                            modifier = Modifier.heightIn(min = 42.dp),
+                            contentPadding = PaddingValues(horizontal = 10.dp, vertical = 8.dp)
                         ) {
                             Icon(Icons.Filled.ContentCopy, contentDescription = null, modifier = Modifier.size(16.dp))
                             Spacer(modifier = Modifier.width(4.dp))
-                            Text(stringResource(R.string.log_action_copy), fontSize = 12.sp)
+                            Text(
+                                text = stringResource(R.string.log_action_copy),
+                                fontSize = 12.sp,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
                         }
 
                         Button(
                             onClick = {
                                 AppLogger.exportAndShare(context, logLevel, logFormat)
                             },
-                            modifier = Modifier.weight(1f),
-                            contentPadding = PaddingValues(horizontal = 4.dp, vertical = 8.dp)
+                            modifier = Modifier.heightIn(min = 42.dp),
+                            contentPadding = PaddingValues(horizontal = 10.dp, vertical = 8.dp)
                         ) {
                             Icon(Icons.Filled.Share, contentDescription = null, modifier = Modifier.size(16.dp))
                             Spacer(modifier = Modifier.width(4.dp))
-                            Text(stringResource(R.string.log_action_export), fontSize = 12.sp)
+                            Text(
+                                text = stringResource(R.string.log_action_export),
+                                fontSize = 12.sp,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
                         }
                     }
                 }
@@ -1182,8 +1171,13 @@ private fun SystemFontSettingCard(
     onWeightChanged: (Int) -> Unit,
     onResetDefault: () -> Unit
 ) {
-    val activeFontName = remember(selectedFontId, scannedCount) {
-        SystemFontScanner.getDisplayName(selectedFontId)
+    val defaultFontLabel = stringResource(R.string.font_system)
+    val activeFontName = remember(selectedFontId, scannedCount, defaultFontLabel) {
+        if (selectedFontId == SystemFontScanner.ID_SYSTEM_DEFAULT || selectedFontId.isBlank()) {
+            defaultFontLabel
+        } else {
+            SystemFontScanner.getDisplayName(selectedFontId)
+        }
     }
     val rawWeightIndex = AppFontWeights.indexOfFirst { it.first.weight == fontWeight }
     val weightIndex = if (rawWeightIndex >= 0) rawWeightIndex else 3 // 400 Regular
@@ -1211,7 +1205,7 @@ private fun SystemFontSettingCard(
                     .clip(RoundedCornerShape(14.dp))
                     .clickable { onOpenPicker() }
                     .padding(vertical = 4.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Row(
@@ -1249,7 +1243,8 @@ private fun SystemFontSettingCard(
 
                 Surface(
                     shape = RoundedCornerShape(12.dp),
-                    color = MaterialTheme.colorScheme.secondaryContainer
+                    color = MaterialTheme.colorScheme.secondaryContainer,
+                    modifier = Modifier.widthIn(max = 160.dp)
                 ) {
                     Row(
                         modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
@@ -1260,7 +1255,9 @@ private fun SystemFontSettingCard(
                             fontSize = 12.sp,
                             fontWeight = FontWeight.SemiBold,
                             color = MaterialTheme.colorScheme.onSecondaryContainer,
-                            maxLines = 1
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.weight(1f, fill = false)
                         )
                         Spacer(modifier = Modifier.width(4.dp))
                         Icon(
@@ -1419,12 +1416,21 @@ private fun ColorPickerRow(
 }
 
 @Composable
-private fun RowScope.ThemeChip(label: String, selected: Boolean, isDark: Boolean, onClick: () -> Unit) {
+private fun ThemeChip(label: String, selected: Boolean, isDark: Boolean, onClick: () -> Unit) {
     FilterChip(
         selected = selected,
         onClick = onClick,
-        label = { Text(label, fontSize = 13.sp) },
-        modifier = Modifier.weight(1f),
+        label = {
+            Text(
+                text = label,
+                fontSize = 13.sp,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth()
+            )
+        },
+        modifier = Modifier.heightIn(min = 38.dp),
         shape = RoundedCornerShape(12.dp),
         colors = FilterChipDefaults.filterChipColors(
             selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
@@ -1469,21 +1475,36 @@ private fun LanguageDropdown(currentCode: String, isDark: Boolean, onSelect: (St
     val currentLabel = options.firstOrNull { it.first == currentCode }
         ?.second?.let { stringResource(it) } ?: currentCode
 
-    Box {
-        Row(
+    Box(modifier = Modifier.padding(top = 6.dp)) {
+        Surface(
             modifier = Modifier
                 .fillMaxWidth()
-                .clickable { expanded = true }
-                .padding(horizontal = 16.dp, vertical = 10.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
+                .clip(RoundedCornerShape(12.dp))
+                .clickable { expanded = true },
+            shape = RoundedCornerShape(12.dp),
+            color = MaterialTheme.colorScheme.surfaceContainerHigh
         ) {
-            Text(currentLabel, fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurface)
-            Icon(
-                Icons.Filled.ArrowDropDown,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant
-            )
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 14.dp, vertical = 10.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = currentLabel,
+                    fontSize = 14.sp,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f)
+                )
+                Icon(
+                    Icons.Filled.ArrowDropDown,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
         }
         DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
             options.forEach { (code, labelRes) ->
@@ -1580,21 +1601,36 @@ private fun LogLevelDropdown(currentLevel: String, onSelect: (String) -> Unit) {
         "ERROR"
     )
 
-    Box {
-        Row(
+    Box(modifier = Modifier.padding(top = 6.dp)) {
+        Surface(
             modifier = Modifier
                 .fillMaxWidth()
-                .clickable { expanded = true }
-                .padding(horizontal = 16.dp, vertical = 10.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
+                .clip(RoundedCornerShape(12.dp))
+                .clickable { expanded = true },
+            shape = RoundedCornerShape(12.dp),
+            color = MaterialTheme.colorScheme.surfaceContainerHigh
         ) {
-            Text(currentLevel, fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurface)
-            Icon(
-                Icons.Filled.ArrowDropDown,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant
-            )
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 14.dp, vertical = 10.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = currentLevel,
+                    fontSize = 14.sp,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f)
+                )
+                Icon(
+                    Icons.Filled.ArrowDropDown,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
         }
         DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
             options.forEach { level ->
@@ -1616,28 +1652,44 @@ private fun LogLevelDropdown(currentLevel: String, onSelect: (String) -> Unit) {
 @Composable
 private fun LogFormatDropdown(currentFormat: String, onSelect: (String) -> Unit) {
     var expanded by remember { mutableStateOf(false) }
+    val defaultLogLabel = stringResource(R.string.log_format_default)
     val options = listOf(
-        "log" to ".log (默认)",
+        "log" to defaultLogLabel,
         "txt" to ".txt",
         "md" to ".md"
     )
     val currentLabel = options.firstOrNull { it.first.equals(currentFormat, ignoreCase = true) }?.second ?: ".$currentFormat"
 
-    Box {
-        Row(
+    Box(modifier = Modifier.padding(top = 6.dp)) {
+        Surface(
             modifier = Modifier
                 .fillMaxWidth()
-                .clickable { expanded = true }
-                .padding(horizontal = 16.dp, vertical = 10.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
+                .clip(RoundedCornerShape(12.dp))
+                .clickable { expanded = true },
+            shape = RoundedCornerShape(12.dp),
+            color = MaterialTheme.colorScheme.surfaceContainerHigh
         ) {
-            Text(currentLabel, fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurface)
-            Icon(
-                Icons.Filled.ArrowDropDown,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant
-            )
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 14.dp, vertical = 10.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = currentLabel,
+                    fontSize = 14.sp,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f)
+                )
+                Icon(
+                    Icons.Filled.ArrowDropDown,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
         }
         DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
             options.forEach { (format, label) ->

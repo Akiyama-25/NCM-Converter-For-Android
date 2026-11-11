@@ -85,9 +85,6 @@
     <string name="home_stats_done">Completed</string>
     <string name="home_stats_pending">Pending</string>
     <string name="home_m3e_badge">M3E · System Font</string>
-    <string name="pref_flutter_blueprint">Flutter 3-Platform Migration Plan</string>
-    <string name="pref_flutter_blueprint_desc">View Android / Windows / iOS M3E &amp; Isolate architecture</string>
-    <string name="blueprint_copied">Migration blueprint copied to clipboard</string>
     <string name="lang_change_title">Language Changed</string>
     <string name="lang_change_message">Please return to the main page to apply the new language.</string>
     <string name="lang_change_confirm">OK</string>
@@ -163,6 +160,7 @@
     <string name="pref_log_desc">View and export runtime logs</string>
     <string name="pref_log_level">Log Level</string>
     <string name="pref_log_format">Log Format</string>
+    <string name="log_format_default">.log (Default)</string>
     <string name="log_dialog_title">Runtime Logs</string>
     <string name="log_empty">No logs available</string>
     <string name="log_copied">Logs copied to clipboard</string>

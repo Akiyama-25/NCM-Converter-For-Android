@@ -13,9 +13,8 @@
 - 后台转换：开启自动保存后，转换在前台服务中进行，通知栏显示进度，切换应用不中断
 - Material You 动态取色（Android 12+）
 - 自定义强调色与背景色（HSL 滑条）
-- Material 3 Expressive (M3E) × FlClash 风格卡片与响应式网格布局，适配折叠屏与平板
+- Material 3 Expressive (M3E) 风格卡片与响应式网格布局，适配折叠屏与平板
 - 读取本机系统已安装字体（零内嵌字体包，支持字体搜索、实时预览切换与 100–900 九档字重自定义调节）
-- 内置 [Flutter 三端（Android / Windows / iOS）跨平台移植完整技术方案](docs/FLUTTER_MIGRATION_BLUEPRINT.md)
 - 全局 AOSP 预见性返回手势跟手缩放预览（返回透出底层页面，支持手势跟手缩放、动态圆角卡片与弹性回弹）
 - 双击返回键退出
 - 进程意外终止后自动恢复文件列表

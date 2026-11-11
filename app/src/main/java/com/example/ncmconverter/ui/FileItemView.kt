@@ -28,6 +28,7 @@ import com.example.ncmconverter.decrypt.model.DecryptState
 import com.example.ncmconverter.ui.theme.Error
 import com.example.ncmconverter.ui.theme.Success
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun FileItemView(
     item: FileItem,
@@ -123,9 +124,9 @@ fun FileItemView(
 
                     Spacer(modifier = Modifier.height(4.dp))
 
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    FlowRow(
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        verticalArrangement = Arrangement.spacedBy(4.dp)
                     ) {
                         Surface(
                             shape = RoundedCornerShape(6.dp),
@@ -352,23 +353,27 @@ fun FileItemView(
                         }
                     }
                     DecryptState.COMPLETED_NO_LYRIC -> {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(
-                                Icons.Filled.CheckCircle,
-                                contentDescription = null,
-                                tint = Success,
-                                modifier = Modifier.size(16.dp)
-                            )
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text(
-                                stringResource(
-                                    R.string.file_completed,
-                                    item.result?.extension?.uppercase() ?: ""
-                                ),
-                                color = Success,
-                                fontSize = 12.sp
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
+                        FlowRow(
+                            horizontalArrangement = Arrangement.spacedBy(6.dp),
+                            verticalArrangement = Arrangement.spacedBy(2.dp)
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(
+                                    Icons.Filled.CheckCircle,
+                                    contentDescription = null,
+                                    tint = Success,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text(
+                                    stringResource(
+                                        R.string.file_completed,
+                                        item.result?.extension?.uppercase() ?: ""
+                                    ),
+                                    color = Success,
+                                    fontSize = 12.sp
+                                )
+                            }
                             Text(
                                 "· " + stringResource(R.string.file_no_lyric),
                                 color = onSurfaceVariant,

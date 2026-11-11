@@ -76,7 +76,7 @@
     <string name="font_system">系统默认字体</string>
     <string name="font_embedded">读取本机系统字体</string>
     <string name="font_weight">全局字重调节</string>
-    <string name="font_picker_title">选择系统已安装字体 (FlClash 风格)</string>
+    <string name="font_picker_title">选择系统已安装字体</string>
     <string name="font_search_hint">搜索本机已安装字体名称…</string>
     <string name="font_scanned_count">已扫描到 %1$d 款本机系统字体（零内嵌字体包）</string>
     <string name="font_preview_sample">AaBbCc 永 网易云音乐 NCM 转换器 123</string>
@@ -85,9 +85,6 @@
     <string name="home_stats_done">已完成</string>
     <string name="home_stats_pending">待处理</string>
     <string name="home_m3e_badge">M3E · 系统字体</string>
-    <string name="pref_flutter_blueprint">Flutter 三端移植方案蓝图</string>
-    <string name="pref_flutter_blueprint_desc">查看 Android / Windows / iOS 跨端架构与 Isolate 代码</string>
-    <string name="blueprint_copied">Flutter 移植方案已复制到剪贴板</string>
     <string name="lang_change_title">语言已更改</string>
     <string name="lang_change_message">返回主页面后将应用新语言。</string>
     <string name="lang_change_confirm">好的</string>
@@ -163,6 +160,7 @@
     <string name="pref_log_desc">查看并导出应用运行与错误日志</string>
     <string name="pref_log_level">日志级别</string>
     <string name="pref_log_format">日志格式</string>
+    <string name="log_format_default">.log (默认)</string>
     <string name="log_dialog_title">运行日志</string>
     <string name="log_empty">暂无可用日志</string>
     <string name="log_copied">日志已复制到剪贴板</string>

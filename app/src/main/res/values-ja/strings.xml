@@ -76,7 +76,7 @@
     <string name="font_system">システムデフォルト</string>
     <string name="font_embedded">端末内フォントを読み込み</string>
     <string name="font_weight">フォントウェイト調整</string>
-    <string name="font_picker_title">システムフォントを選択 (FlClashスタイル)</string>
+    <string name="font_picker_title">システムフォントを選択</string>
     <string name="font_search_hint">インストール済みフォントを検索…</string>
     <string name="font_scanned_count">%1$d 件のシステムフォントを検出（内蔵フォント0MB）</string>
     <string name="font_preview_sample">AaBbCc 永 NetEase NCM コンバーター 123</string>
@@ -85,9 +85,6 @@
     <string name="home_stats_done">完了</string>
     <string name="home_stats_pending">待機中</string>
     <string name="home_m3e_badge">M3E · システムフォント</string>
-    <string name="pref_flutter_blueprint">Flutter 3プラットフォーム移植設計書</string>
-    <string name="pref_flutter_blueprint_desc">Android / Windows / iOS 設計とIsolateコードを表示</string>
-    <string name="blueprint_copied">移植設計書をクリップボードにコピーしました</string>
     <string name="lang_change_title">言語が変更されました</string>
     <string name="lang_change_message">メインページに戻ると新しい言語が適用されます。</string>
     <string name="lang_change_confirm">OK</string>
@@ -163,6 +160,7 @@
     <string name="pref_log_desc">実行ログとエラーログを表示・エクスポート</string>
     <string name="pref_log_level">ログレベル</string>
     <string name="pref_log_format">ログ形式</string>
+    <string name="log_format_default">.log (デフォルト)</string>
     <string name="log_dialog_title">実行ログ</string>
     <string name="log_empty">利用可能なログはありません</string>
     <string name="log_copied">ログをクリップボードにコピーしました</string>

@@ -65,11 +65,11 @@ class MainActivity : AppCompatActivity() {
                 name.endsWith(".ncm", ignoreCase = true)
             }
             if (ncmFiles.isEmpty()) {
-                Toast.makeText(this, "未选择任何 .ncm 文件", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, getString(R.string.home_no_ncm_selected), Toast.LENGTH_SHORT).show()
                 return@registerForActivityResult
             }
             if (ncmFiles.size < uris.size) {
-                Toast.makeText(this, "已过滤非 .ncm 文件", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, getString(R.string.home_non_ncm_filtered), Toast.LENGTH_SHORT).show()
             }
 
             // Take persistable URI permission so files survive process death
@@ -144,7 +144,18 @@ class MainActivity : AppCompatActivity() {
             NcmConverterTheme {
                 PredictiveBackContainer(
                     isOverlayOpen = showSettings,
-                    onCloseOverlay = { showSettings = false },
+                    onCloseOverlay = {
+                        showSettings = false
+                        val lang = AppPrefs.appLanguage
+                        if (lang != lastAppliedLanguage) {
+                            lastAppliedLanguage = lang
+                            try {
+                                val locales = if (lang == "system") LocaleListCompat.getEmptyLocaleList()
+                                              else LocaleListCompat.forLanguageTags(lang)
+                                AppCompatDelegate.setApplicationLocales(locales)
+                            } catch (_: Exception) {}
+                        }
+                    },
                     backgroundContent = {
                         HomeScreen(
                             viewModel = viewModel,
@@ -206,12 +217,20 @@ class MainActivity : AppCompatActivity() {
                 )
 
                 if (uri != null) {
-                    Toast.makeText(this@MainActivity, "已保存到 ${AppPrefs.customPath}", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(
+                        this@MainActivity,
+                        getString(R.string.main_saved_to, AppPrefs.customPath),
+                        Toast.LENGTH_SHORT
+                    ).show()
                 } else {
-                    Toast.makeText(this@MainActivity, "保存失败", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this@MainActivity, getString(R.string.main_save_failed), Toast.LENGTH_SHORT).show()
                 }
             } catch (e: Exception) {
-                Toast.makeText(this@MainActivity, "保存失败: ${e.message}", Toast.LENGTH_SHORT).show()
+                Toast.makeText(
+                    this@MainActivity,
+                    getString(R.string.main_save_failed_msg, e.message ?: ""),
+                    Toast.LENGTH_SHORT
+                ).show()
             } finally {
                 // Release decrypted audio data from memory
                 viewModel.clearResult(item.id)

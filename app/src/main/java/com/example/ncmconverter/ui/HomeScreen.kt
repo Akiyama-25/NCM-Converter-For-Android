@@ -1,24 +1,16 @@
 package com.example.ncmconverter.ui
 
 import android.app.Activity
-import android.content.ClipData
-import android.content.ClipboardManager
-import android.content.Context
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.selection.SelectionContainer
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -28,14 +20,16 @@ import androidx.compose.material3.windowsizeclass.calculateWindowSizeClass
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.layout.SubcomposeLayout
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Constraints
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.ncmconverter.R
@@ -70,7 +64,6 @@ fun HomeScreen(
     }
 
     var showClearDialog by remember { mutableStateOf(false) }
-    var showBlueprintDialog by remember { mutableStateOf(false) }
     var newFileIds by remember { mutableStateOf(emptySet<Long>()) }
     var animatingOutItems by remember { mutableStateOf(emptyMap<Long, FileItem>()) }
     var lastBackPress by remember { mutableLongStateOf(0L) }
@@ -106,59 +99,26 @@ fun HomeScreen(
         it.state == DecryptState.IDLE || it.state == DecryptState.FAILED
     }
 
-    val activeFontLabel = remember(systemFontId) {
-        SystemFontScanner.getDisplayName(systemFontId)
+    val defaultFontLabel = stringResource(R.string.font_system)
+    val activeFontLabel = remember(systemFontId, defaultFontLabel) {
+        if (systemFontId == SystemFontScanner.ID_SYSTEM_DEFAULT || systemFontId.isBlank()) {
+            defaultFontLabel
+        } else {
+            SystemFontScanner.getDisplayName(systemFontId)
+        }
     }
 
     Scaffold(
         topBar = {
             TopAppBar(
                 title = {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        Column {
-                            Text(
-                                stringResource(R.string.home_title),
-                                style = MaterialTheme.typography.titleLarge
-                            )
-                            if (isProcessing) {
-                                Text(
-                                    stringResource(R.string.home_decrypting),
-                                    fontSize = 12.sp,
-                                    color = MaterialTheme.colorScheme.primary
-                                )
-                            }
-                        }
-                        Surface(
-                            shape = CircleShape,
-                            color = MaterialTheme.colorScheme.secondaryContainer
-                        ) {
-                            Text(
-                                text = stringResource(R.string.home_m3e_badge),
-                                color = MaterialTheme.colorScheme.onSecondaryContainer,
-                                fontSize = 10.sp,
-                                fontWeight = FontWeight.SemiBold,
-                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
-                            )
-                        }
-                    }
+                    AdaptiveTopBarTitle(
+                        title = stringResource(R.string.home_title),
+                        subtitle = if (isProcessing) stringResource(R.string.home_decrypting) else null,
+                        badge = stringResource(R.string.home_m3e_badge)
+                    )
                 },
                 actions = {
-                    FilledTonalIconButton(
-                        onClick = { showBlueprintDialog = true },
-                        modifier = Modifier.testTag("open_flutter_blueprint_button"),
-                        colors = IconButtonDefaults.filledTonalIconButtonColors(
-                            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
-                        )
-                    ) {
-                        Icon(
-                            Icons.Filled.Devices,
-                            contentDescription = stringResource(R.string.pref_flutter_blueprint)
-                        )
-                    }
-                    Spacer(modifier = Modifier.width(4.dp))
                     FilledTonalIconButton(
                         onClick = onOpenSettings,
                         modifier = Modifier.testTag("open_settings_button"),
@@ -197,33 +157,38 @@ fun HomeScreen(
                     color = MaterialTheme.colorScheme.surfaceContainerHigh,
                     border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
                 ) {
-                    Row(
+                    AdaptiveControlsRow(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(horizontal = 12.dp, vertical = 10.dp),
-                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                        horizontalSpacing = 10.dp,
+                        verticalSpacing = 8.dp
                     ) {
                         OutlinedButton(
                             onClick = { showClearDialog = true },
                             modifier = Modifier
-                                .weight(1f)
-                                .height(48.dp)
+                                .heightIn(min = 48.dp)
                                 .testTag("clear_list_button"),
                             shape = RoundedCornerShape(16.dp),
+                            contentPadding = PaddingValues(horizontal = 14.dp, vertical = 10.dp),
                             enabled = files.isNotEmpty()
                         ) {
                             Icon(Icons.Filled.DeleteSweep, contentDescription = null, modifier = Modifier.size(18.dp))
                             Spacer(modifier = Modifier.width(6.dp))
-                            Text(stringResource(R.string.home_clear_list))
+                            Text(
+                                text = stringResource(R.string.home_clear_list),
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
                         }
 
                         Button(
                             onClick = { viewModel.decryptAll() },
                             modifier = Modifier
-                                .weight(1.25f)
-                                .height(48.dp)
+                                .heightIn(min = 48.dp)
                                 .testTag("convert_all_button"),
                             shape = RoundedCornerShape(16.dp),
+                            contentPadding = PaddingValues(horizontal = 14.dp, vertical = 10.dp),
                             enabled = !isProcessing && files.any {
                                 it.state == DecryptState.IDLE || it.state == DecryptState.FAILED
                             },
@@ -231,7 +196,11 @@ fun HomeScreen(
                         ) {
                             Icon(Icons.Filled.Bolt, contentDescription = null, modifier = Modifier.size(18.dp))
                             Spacer(modifier = Modifier.width(6.dp))
-                            Text(stringResource(R.string.home_convert_all))
+                            Text(
+                                text = stringResource(R.string.home_convert_all),
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
                         }
                     }
                 }
@@ -244,7 +213,7 @@ fun HomeScreen(
                 .fillMaxSize()
                 .padding(padding)
         ) {
-            // FlClash-inspired M3E Expressive Hero Dashboard Card
+            // M3E Expressive Hero Dashboard Card
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -260,57 +229,61 @@ fun HomeScreen(
                         .fillMaxWidth()
                         .padding(16.dp)
                 ) {
-                    Row(
+                    AdaptiveControlsRow(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        horizontalSpacing = 8.dp,
+                        verticalSpacing = 8.dp
                     ) {
                         M3EStatPill(
                             label = stringResource(R.string.home_stats_total),
                             value = totalCount.toString(),
                             containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-                            contentColor = MaterialTheme.colorScheme.onSurface,
-                            modifier = Modifier.weight(1f)
+                            contentColor = MaterialTheme.colorScheme.onSurface
                         )
                         M3EStatPill(
                             label = stringResource(R.string.home_stats_done),
                             value = doneCount.toString(),
                             containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.7f),
-                            contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                            modifier = Modifier.weight(1f)
+                            contentColor = MaterialTheme.colorScheme.onPrimaryContainer
                         )
                         M3EStatPill(
                             label = stringResource(R.string.home_stats_pending),
                             value = pendingCount.toString(),
                             containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.7f),
-                            contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
-                            modifier = Modifier.weight(1f)
+                            contentColor = MaterialTheme.colorScheme.onSecondaryContainer
                         )
                     }
 
                     Spacer(modifier = Modifier.height(12.dp))
 
-                    Row(
+                    AdaptiveControlsRow(
                         modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        horizontalSpacing = 8.dp,
+                        verticalSpacing = 8.dp
                     ) {
                         Button(
                             onClick = onPickFiles,
                             modifier = Modifier
-                                .weight(1f)
-                                .height(48.dp)
+                                .heightIn(min = 48.dp)
                                 .testTag("pick_files_button"),
                             shape = RoundedCornerShape(16.dp),
+                            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 10.dp),
                             colors = ButtonDefaults.buttonColors(
                                 containerColor = MaterialTheme.colorScheme.primary
                             ),
                             enabled = !isProcessing
                         ) {
-                            Icon(Icons.Filled.AddCircleOutline, contentDescription = null, modifier = Modifier.size(20.dp))
+                            Icon(
+                                Icons.Filled.AddCircleOutline,
+                                contentDescription = null,
+                                modifier = Modifier.size(20.dp)
+                            )
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(
-                                stringResource(R.string.home_pick_files),
-                                style = MaterialTheme.typography.labelLarge
+                                text = stringResource(R.string.home_pick_files),
+                                style = MaterialTheme.typography.labelLarge,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
                             )
                         }
 
@@ -318,11 +291,12 @@ fun HomeScreen(
                             onClick = onOpenSettings,
                             shape = RoundedCornerShape(16.dp),
                             color = MaterialTheme.colorScheme.surfaceContainerHigh,
-                            modifier = Modifier.height(48.dp)
+                            modifier = Modifier.heightIn(min = 48.dp)
                         ) {
                             Row(
-                                modifier = Modifier.padding(horizontal = 12.dp),
-                                verticalAlignment = Alignment.CenterVertically
+                                modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.Center
                             ) {
                                 Icon(
                                     Icons.Filled.FontDownload,
@@ -333,9 +307,10 @@ fun HomeScreen(
                                 Spacer(modifier = Modifier.width(6.dp))
                                 Text(
                                     text = "$activeFontLabel · W$fontWeight",
-                                    fontSize = 11.sp,
+                                    fontSize = 12.sp,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    maxLines = 1
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
                                 )
                             }
                         }
@@ -502,9 +477,268 @@ fun HomeScreen(
             }
         )
     }
+}
 
-    if (showBlueprintDialog) {
-        FlutterBlueprintDialog(onDismiss = { showBlueprintDialog = false })
+@Composable
+private fun AdaptiveTopBarTitle(
+    title: String,
+    subtitle: String?,
+    badge: String
+) {
+    SubcomposeLayout(modifier = Modifier.fillMaxWidth()) { constraints ->
+        val maxWidth = constraints.maxWidth
+        val gap = 8.dp.roundToPx()
+
+        val titleMeasurable = subcompose("title") {
+            Column {
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.titleLarge,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                if (subtitle != null) {
+                    Text(
+                        text = subtitle,
+                        fontSize = 12.sp,
+                        color = MaterialTheme.colorScheme.primary,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+            }
+        }.first()
+
+        val badgeMeasurable = subcompose("badge") {
+            Surface(
+                shape = RoundedCornerShape(50),
+                color = MaterialTheme.colorScheme.secondaryContainer
+            ) {
+                Text(
+                    text = badge,
+                    color = MaterialTheme.colorScheme.onSecondaryContainer,
+                    fontSize = 10.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    maxLines = 1,
+                    softWrap = false,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+                )
+            }
+        }.first()
+
+        val titleIntrinsicW = titleMeasurable.maxIntrinsicWidth(Constraints.Infinity)
+        val badgeIntrinsicW = badgeMeasurable.maxIntrinsicWidth(Constraints.Infinity)
+
+        if (titleIntrinsicW + gap + badgeIntrinsicW <= maxWidth) {
+            val badgePlaceable = badgeMeasurable.measure(Constraints(maxWidth = maxWidth))
+            val titlePlaceable = titleMeasurable.measure(
+                Constraints(maxWidth = (maxWidth - badgePlaceable.width - gap).coerceAtLeast(0))
+            )
+            val height = maxOf(titlePlaceable.height, badgePlaceable.height)
+            layout(maxWidth, height) {
+                titlePlaceable.placeRelative(0, (height - titlePlaceable.height) / 2)
+                badgePlaceable.placeRelative(
+                    titlePlaceable.width + gap,
+                    (height - badgePlaceable.height) / 2
+                )
+            }
+        } else {
+            val compactTitleMeasurable = subcompose("compactTitle") {
+                Column {
+                    Text(
+                        text = title,
+                        style = MaterialTheme.typography.titleMedium.copy(
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.SemiBold
+                        ),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    if (subtitle != null) {
+                        Text(
+                            text = subtitle,
+                            fontSize = 11.sp,
+                            color = MaterialTheme.colorScheme.primary,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+                }
+            }.first()
+            val compactTitleW = compactTitleMeasurable.maxIntrinsicWidth(Constraints.Infinity)
+            if (compactTitleW + gap + badgeIntrinsicW <= maxWidth) {
+                val badgePlaceable = badgeMeasurable.measure(Constraints(maxWidth = maxWidth))
+                val titlePlaceable = compactTitleMeasurable.measure(
+                    Constraints(maxWidth = (maxWidth - badgePlaceable.width - gap).coerceAtLeast(0))
+                )
+                val height = maxOf(titlePlaceable.height, badgePlaceable.height)
+                layout(maxWidth, height) {
+                    titlePlaceable.placeRelative(0, (height - titlePlaceable.height) / 2)
+                    badgePlaceable.placeRelative(
+                        titlePlaceable.width + gap,
+                        (height - badgePlaceable.height) / 2
+                    )
+                }
+            } else {
+                val titlePlaceable = compactTitleMeasurable.measure(Constraints(maxWidth = maxWidth))
+                val badgePlaceable = badgeMeasurable.measure(Constraints(maxWidth = maxWidth))
+                val vGap = 2.dp.roundToPx()
+                val height = titlePlaceable.height + vGap + badgePlaceable.height
+                layout(maxWidth, height) {
+                    titlePlaceable.placeRelative(0, 0)
+                    badgePlaceable.placeRelative(0, titlePlaceable.height + vGap)
+                }
+            }
+        }
+    }
+}
+
+/**
+ * Width-adaptive row container:
+ * Measures each child's natural single-line intrinsic width.
+ * - If all children fit on one row within the available width, allocates each child its
+ *   intrinsic width plus a proportional share of remaining space so no control ever wraps or clips.
+ * - If combined intrinsic widths exceed available width, wraps controls into multiple rows
+ *   and expands items on each row to fill 100% of the available width.
+ */
+@Composable
+fun AdaptiveControlsRow(
+    modifier: Modifier = Modifier,
+    horizontalSpacing: Dp = 8.dp,
+    verticalSpacing: Dp = 8.dp,
+    equalMinWeight: Boolean = false,
+    content: @Composable () -> Unit
+) {
+    SubcomposeLayout(modifier = modifier) { constraints ->
+        val measurables = subcompose("items", content)
+        if (measurables.isEmpty()) {
+            return@SubcomposeLayout layout(0, 0) {}
+        }
+        val hGap = horizontalSpacing.roundToPx()
+        val vGap = verticalSpacing.roundToPx()
+        val maxWidth = constraints.maxWidth
+
+        val intrinsicWidths = measurables.map {
+            it.maxIntrinsicWidth(Constraints.Infinity).coerceAtLeast(1)
+        }
+        val totalGap = hGap * (measurables.size - 1)
+        val totalIntrinsic = intrinsicWidths.sum() + totalGap
+
+        if (totalIntrinsic <= maxWidth) {
+            val extraWidth = (maxWidth - totalIntrinsic).coerceAtLeast(0)
+            val sumIntrinsic = intrinsicWidths.sum().toFloat().coerceAtLeast(1f)
+            var allocatedSum = 0
+            val allocatedWidths = IntArray(measurables.size) { i ->
+                if (i == measurables.lastIndex) {
+                    (maxWidth - totalGap - allocatedSum).coerceAtLeast(intrinsicWidths[i])
+                } else {
+                    val share = if (equalMinWeight) {
+                        extraWidth / measurables.size
+                    } else {
+                        (extraWidth * (intrinsicWidths[i] / sumIntrinsic)).toInt()
+                    }
+                    val w = intrinsicWidths[i] + share
+                    allocatedSum += w
+                    w
+                }
+            }
+
+            val prelimHeights = measurables.mapIndexed { i, m ->
+                m.maxIntrinsicHeight(allocatedWidths[i])
+            }
+            val targetHeight = prelimHeights.maxOrNull() ?: 0
+
+            val placeables = measurables.mapIndexed { i, m ->
+                m.measure(
+                    Constraints(
+                        minWidth = allocatedWidths[i],
+                        maxWidth = allocatedWidths[i],
+                        minHeight = targetHeight,
+                        maxHeight = Constraints.Infinity
+                    )
+                )
+            }
+            val finalHeight = placeables.maxOfOrNull { it.height } ?: targetHeight
+
+            layout(maxWidth, finalHeight) {
+                var x = 0
+                placeables.forEach { p ->
+                    p.placeRelative(x, (finalHeight - p.height) / 2)
+                    x += p.width + hGap
+                }
+            }
+        } else {
+            val rows = mutableListOf<MutableList<Int>>()
+            var currentRow = mutableListOf<Int>()
+            var currentRowWidth = 0
+
+            for (i in measurables.indices) {
+                val w = intrinsicWidths[i]
+                val needed = if (currentRow.isEmpty()) w else currentRowWidth + hGap + w
+                if (currentRow.isNotEmpty() && needed > maxWidth) {
+                    rows.add(currentRow)
+                    currentRow = mutableListOf(i)
+                    currentRowWidth = w
+                } else {
+                    currentRow.add(i)
+                    currentRowWidth = needed
+                }
+            }
+            if (currentRow.isNotEmpty()) {
+                rows.add(currentRow)
+            }
+
+            val measuredRows = rows.map { rowIndices ->
+                val rowGap = hGap * (rowIndices.size - 1)
+                val rowIntrinsicSum = rowIndices.sumOf { intrinsicWidths[it] }
+                val extra = (maxWidth - rowGap - rowIntrinsicSum).coerceAtLeast(0)
+                val sumF = rowIntrinsicSum.toFloat().coerceAtLeast(1f)
+                var used = 0
+                val widths = IntArray(rowIndices.size) { pos ->
+                    val idx = rowIndices[pos]
+                    if (pos == rowIndices.lastIndex) {
+                        (maxWidth - rowGap - used).coerceAtLeast(1)
+                    } else {
+                        val w = (intrinsicWidths[idx] + (extra * (intrinsicWidths[idx] / sumF)).toInt())
+                            .coerceAtMost(maxWidth - rowGap - used)
+                        used += w
+                        w
+                    }
+                }
+                val prelimRowHeights = rowIndices.mapIndexed { pos, idx ->
+                    measurables[idx].maxIntrinsicHeight(widths[pos].coerceAtLeast(1))
+                }
+                val rowTargetH = prelimRowHeights.maxOrNull() ?: 0
+                rowIndices.mapIndexed { pos, idx ->
+                    val w = widths[pos].coerceAtLeast(1)
+                    measurables[idx].measure(
+                        Constraints(
+                            minWidth = w,
+                            maxWidth = w,
+                            minHeight = rowTargetH,
+                            maxHeight = Constraints.Infinity
+                        )
+                    )
+                }
+            }
+
+            val rowHeights = measuredRows.map { r -> r.maxOfOrNull { it.height } ?: 0 }
+            val totalHeight = rowHeights.sum() + vGap * (measuredRows.size - 1).coerceAtLeast(0)
+
+            layout(maxWidth, totalHeight) {
+                var y = 0
+                measuredRows.forEachIndexed { rIdx, rPlaceables ->
+                    var x = 0
+                    val rH = rowHeights[rIdx]
+                    rPlaceables.forEach { p ->
+                        p.placeRelative(x, y + (rH - p.height) / 2)
+                        x += p.width + hGap
+                    }
+                    y += rH + vGap
+                }
+            }
+        }
     }
 }
 
@@ -522,96 +756,25 @@ private fun M3EStatPill(
         color = containerColor
     ) {
         Column(
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = 10.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(
                 text = value,
                 style = MaterialTheme.typography.titleMedium,
                 color = contentColor,
-                fontSize = 18.sp
+                fontSize = 18.sp,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
             )
             Text(
                 text = label,
                 style = MaterialTheme.typography.labelSmall,
                 color = contentColor.copy(alpha = 0.8f),
-                fontSize = 11.sp
+                fontSize = 11.sp,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
             )
         }
     }
-}
-
-@Composable
-fun FlutterBlueprintDialog(onDismiss: () -> Unit) {
-    val context = LocalContext.current
-    val blueprintText = remember {
-        try {
-            context.resources.openRawResource(R.raw.flutter_migration_blueprint)
-                .bufferedReader().use { it.readText() }
-        } catch (_: Exception) {
-            "docs/FLUTTER_MIGRATION_BLUEPRINT.md"
-        }
-    }
-
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(
-                    Icons.Filled.Devices,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(22.dp)
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    stringResource(R.string.pref_flutter_blueprint),
-                    style = MaterialTheme.typography.titleMedium
-                )
-            }
-        },
-        text = {
-            Surface(
-                shape = RoundedCornerShape(14.dp),
-                color = MaterialTheme.colorScheme.surfaceContainerHigh,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .heightIn(min = 220.dp, max = 440.dp)
-            ) {
-                SelectionContainer {
-                    Text(
-                        text = blueprintText,
-                        fontFamily = FontFamily.Monospace,
-                        fontSize = 12.sp,
-                        color = MaterialTheme.colorScheme.onSurface,
-                        modifier = Modifier
-                            .verticalScroll(rememberScrollState())
-                            .padding(12.dp)
-                    )
-                }
-            }
-        },
-        confirmButton = {
-            Button(
-                onClick = {
-                    val cm = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-                    cm.setPrimaryClip(ClipData.newPlainText("Flutter Migration Plan", blueprintText))
-                    Toast.makeText(
-                        context,
-                        context.getString(R.string.blueprint_copied),
-                        Toast.LENGTH_SHORT
-                    ).show()
-                }
-            ) {
-                Icon(Icons.Filled.ContentCopy, contentDescription = null, modifier = Modifier.size(16.dp))
-                Spacer(modifier = Modifier.width(6.dp))
-                Text(stringResource(R.string.log_action_copy))
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text(stringResource(R.string.instructions_close))
-            }
-        }
-    )
 }

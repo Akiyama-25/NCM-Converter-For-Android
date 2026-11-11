@@ -6,10 +6,13 @@ import android.app.PendingIntent
 import android.app.Service
 import android.content.Context
 import android.content.Intent
+import android.content.pm.ServiceInfo
 import android.net.Uri
+import android.os.Build
 import android.os.IBinder
 import android.util.Log
 import androidx.core.app.NotificationCompat
+import androidx.core.app.ServiceCompat
 import com.example.ncmconverter.MainActivity
 import com.example.ncmconverter.R
 import com.example.ncmconverter.api.RetrofitClient
@@ -25,6 +28,7 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancelChildren
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -36,7 +40,7 @@ class DecryptService : Service() {
     companion object {
         private const val CHANNEL_ID = "decrypt_progress"
         private const val NOTIFICATION_ID = 1001
-        private const val STREAMING_THRESHOLD = 30L * 1024 * 1024
+        private const val STREAMING_THRESHOLD = 8L * 1024 * 1024
         private const val TAG = "DecryptService"
 
         var instance: DecryptService? = null
@@ -46,7 +50,8 @@ class DecryptService : Service() {
         val progress: StateFlow<Pair<Int, Int>> = _progress.asStateFlow()
     }
 
-    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+    private val serviceJob = SupervisorJob()
+    private val scope = CoroutineScope(serviceJob + Dispatchers.Default)
     private val viewModel get() = ConvertViewModel.instance
 
     @Volatile
@@ -59,9 +64,25 @@ class DecryptService : Service() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        startForeground(NOTIFICATION_ID, buildNotification(getString(R.string.notif_text)))
+        try {
+            val fgsType = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC
+            } else {
+                0
+            }
+            ServiceCompat.startForeground(
+                this,
+                NOTIFICATION_ID,
+                buildNotification(getString(R.string.notif_text)),
+                fgsType
+            )
+        } catch (e: Exception) {
+            Log.w(TAG, "Unable to enter foreground mode", e)
+            stopSelfResult(startId)
+            return START_NOT_STICKY
+        }
 
-        // Check if ViewModel has a pending conversion (race condition fix)
+        // Check if ViewModel has a pending conversion
         val vm = viewModel
         if (vm != null && vm.isProcessing.value) {
             val pendingId = vm.pendingSingleId
@@ -71,13 +92,30 @@ class DecryptService : Service() {
             } else {
                 startConversion()
             }
+        } else if (!isProcessing) {
+            stopSelfResult(startId)
         }
 
         return START_NOT_STICKY
     }
 
+    override fun onTimeout(startId: Int) {
+        Log.w(TAG, "ForegroundService timeout reached (startId=$startId), stopping gracefully")
+        isProcessing = false
+        serviceJob.cancelChildren()
+        stopSelf(startId)
+    }
+
+    override fun onTimeout(startId: Int, fgsType: Int) {
+        Log.w(TAG, "ForegroundService timeout reached (startId=$startId, type=$fgsType), stopping gracefully")
+        isProcessing = false
+        serviceJob.cancelChildren()
+        stopSelf(startId)
+    }
+
     override fun onDestroy() {
         super.onDestroy()
+        serviceJob.cancelChildren()
         if (instance === this) instance = null
     }
 

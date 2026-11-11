@@ -11,9 +11,9 @@ android {
     defaultConfig {
         applicationId = "Akari.Said.YuriBest"
         minSdk = 26
-        targetSdk = 36
-        versionCode = 9
-        versionName = "release-0.9"
+        targetSdk = 37
+        versionCode = 10
+        versionName = "release-1.0"
     }
 
     signingConfigs {

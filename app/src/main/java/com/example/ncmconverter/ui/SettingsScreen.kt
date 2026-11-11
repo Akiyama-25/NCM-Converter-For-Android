@@ -936,11 +936,14 @@ fun SettingsScreen(onBack: () -> Unit, onPickOutputFolder: () -> Unit = {}) {
             onDismissRequest = { showInstructionsDialog = false },
             title = { Text(stringResource(R.string.instructions_title)) },
             text = {
-                Text(
-                    instructionsText,
-                    modifier = Modifier.verticalScroll(rememberScrollState()),
-                    fontSize = 14.sp
-                )
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(max = 460.dp)
+                        .verticalScroll(rememberScrollState())
+                ) {
+                    MarkdownRenderer(markdown = instructionsText)
+                }
             },
             confirmButton = {
                 TextButton(onClick = { showInstructionsDialog = false }) {
@@ -1070,19 +1073,23 @@ fun SettingsScreen(onBack: () -> Unit, onPickOutputFolder: () -> Unit = {}) {
                         color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
                         shape = RoundedCornerShape(8.dp)
                     ) {
-                        SelectionContainer {
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .verticalScroll(rememberScrollState())
-                                    .padding(8.dp)
-                            ) {
-                                Text(
-                                    text = logText,
-                                    fontSize = 11.sp,
-                                    fontFamily = FontFamily.Monospace,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .verticalScroll(rememberScrollState())
+                                .padding(8.dp)
+                        ) {
+                            if (logFormat.equals("md", ignoreCase = true)) {
+                                MarkdownRenderer(markdown = logText)
+                            } else {
+                                SelectionContainer {
+                                    Text(
+                                        text = logText,
+                                        fontSize = 11.sp,
+                                        fontFamily = FontFamily.Monospace,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
                             }
                         }
                     }

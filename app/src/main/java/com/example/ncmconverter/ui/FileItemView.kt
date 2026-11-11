@@ -76,6 +76,8 @@ fun FileItemView(
             ) {
                 // Album Cover or M3E Expressive Tonal Icon Container
                 val albumPic = item.result?.metadata?.albumPic
+                    ?.trim()
+                    ?.replaceFirst(Regex("^http://", RegexOption.IGNORE_CASE), "https://")
                 if (enableCover && !albumPic.isNullOrBlank()) {
                     AsyncImage(
                         model = albumPic,

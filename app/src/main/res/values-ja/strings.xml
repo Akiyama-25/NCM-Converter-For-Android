@@ -84,7 +84,6 @@
     <string name="home_stats_total">合計</string>
     <string name="home_stats_done">完了</string>
     <string name="home_stats_pending">待機中</string>
-    <string name="home_m3e_badge">M3E · システムフォント</string>
     <string name="lang_change_title">言語が変更されました</string>
     <string name="lang_change_message">メインページに戻ると新しい言語が適用されます。</string>
     <string name="lang_change_confirm">OK</string>

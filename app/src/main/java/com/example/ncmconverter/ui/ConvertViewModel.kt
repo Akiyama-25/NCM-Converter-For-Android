@@ -42,7 +42,7 @@ class ConvertViewModel(application: Application) : AndroidViewModel(application)
     companion object {
         var instance: ConvertViewModel? = null
             private set
-        private const val STREAMING_THRESHOLD = 30L * 1024 * 1024
+        private const val STREAMING_THRESHOLD = 8L * 1024 * 1024
         private const val MAX_CONCURRENT_DECRYPTS = 2
         private const val TAG = "ConvertViewModel"
     }
@@ -102,25 +102,30 @@ class ConvertViewModel(application: Application) : AndroidViewModel(application)
     fun decryptAll() {
         _isProcessing.value = true
         if (AppPrefs.autoSave) {
-            // Background conversion via foreground service
             val service = DecryptService.instance
             if (service != null) {
                 service.startConversion()
-            } else {
+                return
+            }
+            val started = try {
                 getApplication<Application>().startForegroundService(
                     Intent(getApplication(), DecryptService::class.java)
                 )
+                true
+            } catch (e: Exception) {
+                Log.w(TAG, "ForegroundService start restricted, falling back to in-process conversion", e)
+                false
             }
-        } else {
-            // Direct conversion in ViewModel scope
-            val pending = _files.value.filter {
-                it.state == DecryptState.IDLE || it.state == DecryptState.FAILED
-            }
-            if (pending.isEmpty()) { _isProcessing.value = false; return }
-            for (file in pending) {
-                viewModelScope.launch {
-                    decryptSemaphore.withPermit { convertDirect(file, forceStreaming = true) }
-                }
+            if (started) return
+        }
+        // Direct conversion in ViewModel scope
+        val pending = _files.value.filter {
+            it.state == DecryptState.IDLE || it.state == DecryptState.FAILED
+        }
+        if (pending.isEmpty()) { _isProcessing.value = false; return }
+        for (file in pending) {
+            viewModelScope.launch {
+                decryptSemaphore.withPermit { convertDirect(file, forceStreaming = true) }
             }
         }
     }
@@ -131,16 +136,26 @@ class ConvertViewModel(application: Application) : AndroidViewModel(application)
             val service = DecryptService.instance
             if (service != null) {
                 service.startConversionSingle(id)
-            } else {
-                pendingSingleId = id
+                return
+            }
+            pendingSingleId = id
+            val started = try {
                 getApplication<Application>().startForegroundService(
                     Intent(getApplication(), DecryptService::class.java)
                 )
+                true
+            } catch (e: Exception) {
+                pendingSingleId = null
+                Log.w(TAG, "ForegroundService start restricted, falling back to in-process conversion", e)
+                false
             }
-        } else {
-            val file = _files.value.find { it.id == id } ?: return
-            viewModelScope.launch { convertDirect(file) }
+            if (started) return
         }
+        val file = _files.value.find { it.id == id } ?: run {
+            _isProcessing.value = false
+            return
+        }
+        viewModelScope.launch { convertDirect(file) }
     }
 
     private suspend fun convertDirect(file: FileItem, forceStreaming: Boolean = false) {

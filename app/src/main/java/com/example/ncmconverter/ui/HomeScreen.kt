@@ -34,7 +34,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.ncmconverter.R
 import com.example.ncmconverter.decrypt.model.DecryptState
-import com.example.ncmconverter.ui.theme.SystemFontScanner
 import com.example.ncmconverter.util.AppPrefs
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
@@ -52,8 +51,6 @@ fun HomeScreen(
     val isProcessing by viewModel.isProcessing.collectAsState()
     val gridColumns by AppPrefs.gridColumnsFlow.collectAsState()
     val portraitGridEnabled by AppPrefs.portraitGridEnabledFlow.collectAsState()
-    val systemFontId by AppPrefs.systemFontIdFlow.collectAsState()
-    val fontWeight by AppPrefs.fontWeightFlow.collectAsState()
     val context = LocalContext.current
     val activity = context as Activity
 
@@ -99,24 +96,27 @@ fun HomeScreen(
         it.state == DecryptState.IDLE || it.state == DecryptState.FAILED
     }
 
-    val defaultFontLabel = stringResource(R.string.font_system)
-    val activeFontLabel = remember(systemFontId, defaultFontLabel) {
-        if (systemFontId == SystemFontScanner.ID_SYSTEM_DEFAULT || systemFontId.isBlank()) {
-            defaultFontLabel
-        } else {
-            SystemFontScanner.getDisplayName(systemFontId)
-        }
-    }
-
     Scaffold(
         topBar = {
             TopAppBar(
                 title = {
-                    AdaptiveTopBarTitle(
-                        title = stringResource(R.string.home_title),
-                        subtitle = if (isProcessing) stringResource(R.string.home_decrypting) else null,
-                        badge = stringResource(R.string.home_m3e_badge)
-                    )
+                    Column {
+                        Text(
+                            text = stringResource(R.string.home_title),
+                            style = MaterialTheme.typography.titleLarge,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                        if (isProcessing) {
+                            Text(
+                                text = stringResource(R.string.home_decrypting),
+                                fontSize = 12.sp,
+                                color = MaterialTheme.colorScheme.primary,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
+                    }
                 },
                 actions = {
                     FilledTonalIconButton(
@@ -256,64 +256,31 @@ fun HomeScreen(
 
                     Spacer(modifier = Modifier.height(12.dp))
 
-                    AdaptiveControlsRow(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalSpacing = 8.dp,
-                        verticalSpacing = 8.dp
+                    Button(
+                        onClick = onPickFiles,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .heightIn(min = 48.dp)
+                            .testTag("pick_files_button"),
+                        shape = RoundedCornerShape(16.dp),
+                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 10.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.primary
+                        ),
+                        enabled = !isProcessing
                     ) {
-                        Button(
-                            onClick = onPickFiles,
-                            modifier = Modifier
-                                .heightIn(min = 48.dp)
-                                .testTag("pick_files_button"),
-                            shape = RoundedCornerShape(16.dp),
-                            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 10.dp),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = MaterialTheme.colorScheme.primary
-                            ),
-                            enabled = !isProcessing
-                        ) {
-                            Icon(
-                                Icons.Filled.AddCircleOutline,
-                                contentDescription = null,
-                                modifier = Modifier.size(20.dp)
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(
-                                text = stringResource(R.string.home_pick_files),
-                                style = MaterialTheme.typography.labelLarge,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
-                            )
-                        }
-
-                        Surface(
-                            onClick = onOpenSettings,
-                            shape = RoundedCornerShape(16.dp),
-                            color = MaterialTheme.colorScheme.surfaceContainerHigh,
-                            modifier = Modifier.heightIn(min = 48.dp)
-                        ) {
-                            Row(
-                                modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.Center
-                            ) {
-                                Icon(
-                                    Icons.Filled.FontDownload,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.size(16.dp)
-                                )
-                                Spacer(modifier = Modifier.width(6.dp))
-                                Text(
-                                    text = "$activeFontLabel · W$fontWeight",
-                                    fontSize = 12.sp,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis
-                                )
-                            }
-                        }
+                        Icon(
+                            Icons.Filled.AddCircleOutline,
+                            contentDescription = null,
+                            modifier = Modifier.size(20.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = stringResource(R.string.home_pick_files),
+                            style = MaterialTheme.typography.labelLarge,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
                     }
                 }
             }
@@ -476,121 +443,6 @@ fun HomeScreen(
                 TextButton(onClick = { showClearDialog = false }) { Text(stringResource(R.string.home_cancel)) }
             }
         )
-    }
-}
-
-@Composable
-private fun AdaptiveTopBarTitle(
-    title: String,
-    subtitle: String?,
-    badge: String
-) {
-    SubcomposeLayout(modifier = Modifier.fillMaxWidth()) { constraints ->
-        val maxWidth = constraints.maxWidth
-        val gap = 8.dp.roundToPx()
-
-        val titleMeasurable = subcompose("title") {
-            Column {
-                Text(
-                    text = title,
-                    style = MaterialTheme.typography.titleLarge,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-                if (subtitle != null) {
-                    Text(
-                        text = subtitle,
-                        fontSize = 12.sp,
-                        color = MaterialTheme.colorScheme.primary,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                }
-            }
-        }.first()
-
-        val badgeMeasurable = subcompose("badge") {
-            Surface(
-                shape = RoundedCornerShape(50),
-                color = MaterialTheme.colorScheme.secondaryContainer
-            ) {
-                Text(
-                    text = badge,
-                    color = MaterialTheme.colorScheme.onSecondaryContainer,
-                    fontSize = 10.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    maxLines = 1,
-                    softWrap = false,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
-                )
-            }
-        }.first()
-
-        val titleIntrinsicW = titleMeasurable.maxIntrinsicWidth(Constraints.Infinity)
-        val badgeIntrinsicW = badgeMeasurable.maxIntrinsicWidth(Constraints.Infinity)
-
-        if (titleIntrinsicW + gap + badgeIntrinsicW <= maxWidth) {
-            val badgePlaceable = badgeMeasurable.measure(Constraints(maxWidth = maxWidth))
-            val titlePlaceable = titleMeasurable.measure(
-                Constraints(maxWidth = (maxWidth - badgePlaceable.width - gap).coerceAtLeast(0))
-            )
-            val height = maxOf(titlePlaceable.height, badgePlaceable.height)
-            layout(maxWidth, height) {
-                titlePlaceable.placeRelative(0, (height - titlePlaceable.height) / 2)
-                badgePlaceable.placeRelative(
-                    titlePlaceable.width + gap,
-                    (height - badgePlaceable.height) / 2
-                )
-            }
-        } else {
-            val compactTitleMeasurable = subcompose("compactTitle") {
-                Column {
-                    Text(
-                        text = title,
-                        style = MaterialTheme.typography.titleMedium.copy(
-                            fontSize = 18.sp,
-                            fontWeight = FontWeight.SemiBold
-                        ),
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                    if (subtitle != null) {
-                        Text(
-                            text = subtitle,
-                            fontSize = 11.sp,
-                            color = MaterialTheme.colorScheme.primary,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                    }
-                }
-            }.first()
-            val compactTitleW = compactTitleMeasurable.maxIntrinsicWidth(Constraints.Infinity)
-            if (compactTitleW + gap + badgeIntrinsicW <= maxWidth) {
-                val badgePlaceable = badgeMeasurable.measure(Constraints(maxWidth = maxWidth))
-                val titlePlaceable = compactTitleMeasurable.measure(
-                    Constraints(maxWidth = (maxWidth - badgePlaceable.width - gap).coerceAtLeast(0))
-                )
-                val height = maxOf(titlePlaceable.height, badgePlaceable.height)
-                layout(maxWidth, height) {
-                    titlePlaceable.placeRelative(0, (height - titlePlaceable.height) / 2)
-                    badgePlaceable.placeRelative(
-                        titlePlaceable.width + gap,
-                        (height - badgePlaceable.height) / 2
-                    )
-                }
-            } else {
-                val titlePlaceable = compactTitleMeasurable.measure(Constraints(maxWidth = maxWidth))
-                val badgePlaceable = badgeMeasurable.measure(Constraints(maxWidth = maxWidth))
-                val vGap = 2.dp.roundToPx()
-                val height = titlePlaceable.height + vGap + badgePlaceable.height
-                layout(maxWidth, height) {
-                    titlePlaceable.placeRelative(0, 0)
-                    badgePlaceable.placeRelative(0, titlePlaceable.height + vGap)
-                }
-            }
-        }
     }
 }
 

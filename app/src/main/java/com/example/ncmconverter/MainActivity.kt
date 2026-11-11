@@ -1,7 +1,10 @@
 package com.example.ncmconverter
 
+import android.Manifest
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.graphics.drawable.ColorDrawable
+import android.os.Build
 import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
@@ -39,6 +42,10 @@ class MainActivity : AppCompatActivity() {
 
     private lateinit var viewModel: ConvertViewModel
     private var lastAppliedLanguage: String? = null
+
+    private val notificationPermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { _ -> }
 
     // Launcher for selecting custom output directory in Settings
     private val openDocumentTreeLauncher = registerForActivityResult(
@@ -117,9 +124,22 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        // Start DecryptService for background conversion (only when autoSave is enabled)
-        if (AppPrefs.autoSave) {
-            startForegroundService(Intent(this, DecryptService::class.java))
+        // Request POST_NOTIFICATIONS permission on Android 13+ when background conversion is enabled
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU && AppPrefs.autoSave) {
+            if (ContextCompat.checkSelfPermission(
+                    this,
+                    Manifest.permission.POST_NOTIFICATIONS
+                ) != PackageManager.PERMISSION_GRANTED
+            ) {
+                notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+            }
+        }
+
+        // Start DecryptService only if conversion is actively in progress
+        if (AppPrefs.autoSave && viewModel.isProcessing.value) {
+            try {
+                startForegroundService(Intent(this, DecryptService::class.java))
+            } catch (_: Exception) {}
         }
 
         enableEdgeToEdge()

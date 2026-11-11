@@ -84,7 +84,6 @@
     <string name="home_stats_total">佇列總數</string>
     <string name="home_stats_done">已完成</string>
     <string name="home_stats_pending">待處理</string>
-    <string name="home_m3e_badge">M3E · 系統字型</string>
     <string name="lang_change_title">語言已變更</string>
     <string name="lang_change_message">返回主頁面後將套用新語言。</string>
     <string name="lang_change_confirm">好的</string>

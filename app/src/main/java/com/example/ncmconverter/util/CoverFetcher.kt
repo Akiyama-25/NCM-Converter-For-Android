@@ -15,8 +15,9 @@ object CoverFetcher {
         }
         return withContext(Dispatchers.IO) {
             try {
-                Log.d("CoverArt", "Fetching cover: $url")
-                val connection = URL(url).openConnection() as HttpURLConnection
+                val safeUrl = url.trim().replaceFirst(Regex("^http://", RegexOption.IGNORE_CASE), "https://")
+                Log.d("CoverArt", "Fetching cover: $safeUrl")
+                val connection = URL(safeUrl).openConnection() as HttpURLConnection
                 connection.connectTimeout = 8000
                 connection.readTimeout = 8000
                 connection.connect()

@@ -33,7 +33,7 @@
 ## 系统要求
 
 - Android 8.0（API 26）及以上
-- 已适配 Android 16（API 36）
+- 已适配 Android 17（API 37）
 
 ## 技术栈
 

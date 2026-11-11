@@ -84,7 +84,6 @@
     <string name="home_stats_total">Queued</string>
     <string name="home_stats_done">Completed</string>
     <string name="home_stats_pending">Pending</string>
-    <string name="home_m3e_badge">M3E · System Font</string>
     <string name="lang_change_title">Language Changed</string>
     <string name="lang_change_message">Please return to the main page to apply the new language.</string>
     <string name="lang_change_confirm">OK</string>

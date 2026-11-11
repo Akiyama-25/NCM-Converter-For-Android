@@ -13,8 +13,8 @@ An Android app that decrypts NetEase Cloud Music's encrypted `.ncm` files into s
 - Background conversion: when auto-save is enabled, conversion runs in a foreground service with notification progress — switching apps won't interrupt it
 - Material You dynamic colors (Android 12+)
 - Custom accent and background colors via HSL sliders
-- Multi-column grid layout, optimized for foldables and tablets
-- Built-in Resource Han Round SC font with 6 customizable font weight levels
+- Material 3 Expressive (M3E) cards & multi-column grid layout, optimized for foldables and tablets
+- System font scanner & live switcher (zero bundled font bloat, supports 9 font weights 100–900)
 - Global AOSP predictive back gesture with live scale preview & underlying page reveal (gesture-following scale, dynamic card morphing & spring physics)
 - Double-tap back to exit
 - Automatic file list recovery after unexpected process death
@@ -33,7 +33,7 @@ An Android app that decrypts NetEase Cloud Music's encrypted `.ncm` files into s
 ## Requirements
 
 - Android 8.0 (API 26) or higher
-- Android 16 (API 36) supported
+- Android 17 (API 37) supported
 
 ## Tech Stack
 

@@ -16,6 +16,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
@@ -47,7 +48,9 @@ fun PredictiveBackContainer(
     val coroutineScope = rememberCoroutineScope()
     val configuration = LocalConfiguration.current
     val density = LocalDensity.current
-    val screenWidthPx = with(density) { configuration.screenWidthDp.dp.toPx() }
+    val fallbackWidthPx = with(density) { configuration.screenWidthDp.dp.toPx() }
+    var measuredWidthPx by remember { mutableFloatStateOf(0f) }
+    val screenWidthPx = if (measuredWidthPx > 0f) measuredWidthPx else fallbackWidthPx
 
     // Internal composition state of overlay
     var internalOverlayOpen by remember { mutableStateOf(isOverlayOpen) }
@@ -193,7 +196,15 @@ fun PredictiveBackContainer(
         currentScrimAlpha = (0.25f * openFraction).coerceIn(0f, 0.25f)
     }
 
-    Box(modifier = modifier.fillMaxSize()) {
+    Box(
+        modifier = modifier
+            .fillMaxSize()
+            .onSizeChanged { size ->
+                if (size.width > 0) {
+                    measuredWidthPx = size.width.toFloat()
+                }
+            }
+    ) {
         // --- LAYER 1: Background Screen (HomeScreen) ---
         Box(
             modifier = Modifier

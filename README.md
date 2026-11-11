@@ -21,14 +21,18 @@
 - 多语言支持：简体中文、繁体中文、English、日本語
 
 <p align="center">
-  <img src="docs/screenshots/screenshot_1.jpg" alt="Screenshot 1" width="30%" />
-  <img src="docs/screenshots/screenshot_2.jpg" alt="Screenshot 2" width="30%" />
-  <img src="docs/screenshots/screenshot_3.jpg" alt="Screenshot 3" width="30%" />
-  <br><br>
-  <img src="docs/screenshots/screenshot_4.jpg" alt="Screenshot 4" width="30%" />
-  <img src="docs/screenshots/screenshot_5.png" alt="Screenshot 5" width="30%" />
-  <img src="docs/screenshots/screenshot_6.png" alt="Screenshot 6" width="30%" />
+  <img src="docs/screenshots/screenshot_5.png" alt="Screenshot 5" width="40%" />
+  <img src="docs/screenshots/screenshot_6.png" alt="Screenshot 6" width="40%" />
 </p>
+
+> Google Pixel 10 Pro Fold JVM / release-0.3
+
+<p align="center">
+  <img src="docs/screenshots/IMG_20261111_155156.jpg" width="40%" />
+  <img src="docs/screenshots/IMG_20261111_155143.jpg" width="40%" />
+</p>
+
+> Xiaomi 14 / release-1.0
 
 ## 系统要求
 

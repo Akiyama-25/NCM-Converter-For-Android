@@ -13,22 +13,26 @@ An Android app that decrypts NetEase Cloud Music's encrypted `.ncm` files into s
 - Background conversion: when auto-save is enabled, conversion runs in a foreground service with notification progress — switching apps won't interrupt it
 - Material You dynamic colors (Android 12+)
 - Custom accent and background colors via HSL sliders
-- Material 3 Expressive (M3E) cards & multi-column grid layout, optimized for foldables and tablets
-- System font scanner & live switcher (zero bundled font bloat, supports 9 font weights 100–900)
+- Material 3 Expressive (M3E) style cards & responsive grid layout, optimized for foldables and tablets
+- Reads device-installed system fonts (zero bundled font bloat, supports font search, live preview switching & 9 customizable font weights 100–900)
 - Global AOSP predictive back gesture with live scale preview & underlying page reveal (gesture-following scale, dynamic card morphing & spring physics)
 - Double-tap back to exit
 - Automatic file list recovery after unexpected process death
 - Multi-language support: Simplified Chinese, Traditional Chinese, English, Japanese
 
 <p align="center">
-  <img src="docs/screenshots/screenshot_1.jpg" alt="Screenshot 1" width="30%" />
-  <img src="docs/screenshots/screenshot_2.jpg" alt="Screenshot 2" width="30%" />
-  <img src="docs/screenshots/screenshot_3.jpg" alt="Screenshot 3" width="30%" />
-  <br><br>
-  <img src="docs/screenshots/screenshot_4.jpg" alt="Screenshot 4" width="30%" />
-  <img src="docs/screenshots/screenshot_5.png" alt="Screenshot 5" width="30%" />
-  <img src="docs/screenshots/screenshot_6.png" alt="Screenshot 6" width="30%" />
+  <img src="docs/screenshots/screenshot_5.png" alt="Screenshot 5" width="40%" />
+  <img src="docs/screenshots/screenshot_6.png" alt="Screenshot 6" width="40%" />
 </p>
+
+> Google Pixel 10 Pro Fold JVM / release-0.3
+
+<p align="center">
+  <img src="docs/screenshots/IMG_20261111_155156.jpg" width="40%" />
+  <img src="docs/screenshots/IMG_20261111_155143.jpg" width="40%" />
+</p>
+
+> Xiaomi 14 / release-1.0
 
 ## Requirements
 

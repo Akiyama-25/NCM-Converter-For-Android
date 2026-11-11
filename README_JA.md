@@ -13,22 +13,26 @@ NetEase Cloud Music で暗号化された `.ncm` ファイルを標準的な MP3
 - バックグラウンド変換：自動保存を有効にすると、フォアグラウンドサービスで変換を実行し、通知バーに進捗を表示。アプリ切り替えしても中断しません
 - Material You ダイナミックカラー（Android 12+）
 - HSL スライダーによるアクセントカラー・背景色のカスタマイズ
-- Material 3 Expressive (M3E) カード＆マルチカラムグリッドレイアウト、折りたたみ端末・タブレット対応
-- 端末のシステムフォント読み取り対応（内蔵フォント容量ゼロ、検索・リアルタイム切替および 100〜900 の 9 段階ウェイト調整に対応）
+- Material 3 Expressive (M3E) スタイルのカードとレスポンシブグリッドレイアウト、折りたたみ端末・タブレット対応
+- 端末にインストール済みのシステムフォントを読み取り（内蔵フォント容量ゼロ、フォント検索・リアルタイムプレビュー切替および 100〜900 の 9 段階ウェイト調整に対応）
 - グローバル AOSP 予測型バックジェスチャー対応（下層ページの透過プレビュー、追従型縮小、動的角丸カード化および物理スプリング復帰）
 - ダブルタップで終了
 - プロセス異常終了後のファイルリスト自動復元
 - 多言語対応：簡体字中国語、繁体字中国語、English、日本語
 
 <p align="center">
-  <img src="docs/screenshots/screenshot_1.jpg" alt="Screenshot 1" width="30%" />
-  <img src="docs/screenshots/screenshot_2.jpg" alt="Screenshot 2" width="30%" />
-  <img src="docs/screenshots/screenshot_3.jpg" alt="Screenshot 3" width="30%" />
-  <br><br>
-  <img src="docs/screenshots/screenshot_4.jpg" alt="Screenshot 4" width="30%" />
-  <img src="docs/screenshots/screenshot_5.png" alt="Screenshot 5" width="30%" />
-  <img src="docs/screenshots/screenshot_6.png" alt="Screenshot 6" width="30%" />
+  <img src="docs/screenshots/screenshot_5.png" alt="Screenshot 5" width="40%" />
+  <img src="docs/screenshots/screenshot_6.png" alt="Screenshot 6" width="40%" />
 </p>
+
+> Google Pixel 10 Pro Fold JVM / release-0.3
+
+<p align="center">
+  <img src="docs/screenshots/IMG_20261111_155156.jpg" width="40%" />
+  <img src="docs/screenshots/IMG_20261111_155143.jpg" width="40%" />
+</p>
+
+> Xiaomi 14 / release-1.0
 
 ## 動作要件
 

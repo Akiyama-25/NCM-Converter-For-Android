@@ -13,7 +13,7 @@
 - 背景轉換：開啟自動儲存後，轉換在前景服務中進行，通知欄顯示進度，切換應用不會中斷
 - Material You 動態取色（Android 12+）
 - 自訂強調色與背景色（HSL 滑桿）
-- Material 3 Expressive (M3E) 風格卡片與多欄格線佈局，適用於摺疊螢幕與平板
+- Material 3 Expressive (M3E) 風格卡片與響應式格線佈局，適配摺疊螢幕與平板
 - 讀取本機系統已安裝字型（零內嵌字型包，支援字型搜尋、即時預覽切換與 100–900 九檔字重自訂調節）
 - 全域 AOSP 預見性返回手勢跟手縮放預覽（返回透出底層頁面，支援手勢跟手縮放、動態圓角卡片與彈性回彈）
 - 雙擊返回鍵退出
@@ -21,14 +21,18 @@
 - 多語言支援：簡體中文、繁體中文、English、日本語
 
 <p align="center">
-  <img src="docs/screenshots/screenshot_1.jpg" alt="Screenshot 1" width="30%" />
-  <img src="docs/screenshots/screenshot_2.jpg" alt="Screenshot 2" width="30%" />
-  <img src="docs/screenshots/screenshot_3.jpg" alt="Screenshot 3" width="30%" />
-  <br><br>
-  <img src="docs/screenshots/screenshot_4.jpg" alt="Screenshot 4" width="30%" />
-  <img src="docs/screenshots/screenshot_5.png" alt="Screenshot 5" width="30%" />
-  <img src="docs/screenshots/screenshot_6.png" alt="Screenshot 6" width="30%" />
+  <img src="docs/screenshots/screenshot_5.png" alt="Screenshot 5" width="40%" />
+  <img src="docs/screenshots/screenshot_6.png" alt="Screenshot 6" width="40%" />
 </p>
+
+> Google Pixel 10 Pro Fold JVM / release-0.3
+
+<p align="center">
+  <img src="docs/screenshots/IMG_20261111_155156.jpg" width="40%" />
+  <img src="docs/screenshots/IMG_20261111_155143.jpg" width="40%" />
+</p>
+
+> Xiaomi 14 / release-1.0
 
 ## 系統需求
 

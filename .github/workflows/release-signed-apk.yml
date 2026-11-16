@@ -132,6 +132,7 @@ jobs:
 
       - name: Align, sign, verify, and checksum APKs
         env:
+          SAFE_TAG: ${{ steps.ref.outputs.safe_tag }}
           STORE_PASSWORD: ${{ secrets.SIGNING_STORE_PASSWORD || secrets.KEYSTORE_PASSWORD }}
           KEY_PASSWORD: ${{ secrets.SIGNING_KEY_PASSWORD || secrets.KEY_PASSWORD || secrets.SIGNING_STORE_PASSWORD || secrets.KEYSTORE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.SIGNING_KEY_ALIAS || secrets.KEY_ALIAS || 'key0' }}
@@ -153,9 +154,9 @@ jobs:
             ABI_TAG="${ABI_TAG%-unsigned.apk}"
             ABI_TAG="${ABI_TAG%.apk}"
             if [ "$ABI_TAG" = "release" ]; then
-              SIGNED_NAME="NCM-Converter-${{ steps.ref.outputs.safe_tag }}-signed.apk"
+              SIGNED_NAME="NCM-Converter-${SAFE_TAG}-signed.apk"
             else
-              SIGNED_NAME="NCM-Converter-${{ steps.ref.outputs.safe_tag }}-${ABI_TAG}-signed.apk"
+              SIGNED_NAME="NCM-Converter-${SAFE_TAG}-${ABI_TAG}-signed.apk"
             fi
             ALIGNED="dist/aligned-${ABI_TAG}.apk"
             SIGNED="dist/${SIGNED_NAME}"
@@ -182,7 +183,7 @@ jobs:
 
       - name: Remove temporary keystore
         if: always()
-        run: rm -f "${{ runner.temp }}/ncm-converter-signing.p12"
+        run: rm -f "$RUNNER_TEMP/ncm-converter-signing.p12"
 
   publish:
     name: Publish GitHub Release

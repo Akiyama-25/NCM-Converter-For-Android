@@ -14,6 +14,7 @@ import org.json.JSONArray
 import org.json.JSONObject
 import java.io.File
 import java.io.InputStream
+import java.nio.file.Files
 import kotlin.math.min
 
 class NcmDecryptor {
@@ -153,7 +154,7 @@ class NcmDecryptor {
             // Decrypt remaining audio data directly to temp file (streaming I/O)
             emitProgress(DecryptState.DECRYPTING)
             val tempFile = withContext(Dispatchers.IO) {
-                File.createTempFile("ncm_decrypt_", ".tmp")
+                Files.createTempFile("ncm_decrypt_", ".tmp").toFile()
             }
             tempFile.deleteOnExit()
 

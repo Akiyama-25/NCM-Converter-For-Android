@@ -178,4 +178,4 @@ jobs:
 
       - name: Remove temporary keystore
         if: always()
-        run: rm -f "${{ runner.temp }}/ncm-converter-signing.p12"
+        run: rm -f "$RUNNER_TEMP/ncm-converter-signing.p12"

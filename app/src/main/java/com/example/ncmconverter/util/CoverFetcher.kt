@@ -14,10 +14,15 @@ object CoverFetcher {
             return null
         }
         return withContext(Dispatchers.IO) {
+            var connection: HttpURLConnection? = null
             try {
                 val safeUrl = url.trim().replaceFirst(Regex("^http://", RegexOption.IGNORE_CASE), "https://")
+                if (!safeUrl.startsWith("https://", ignoreCase = true)) {
+                    Log.w("CoverArt", "Skip non-HTTPS cover URL")
+                    return@withContext null
+                }
                 Log.d("CoverArt", "Fetching cover: $safeUrl")
-                val connection = URL(safeUrl).openConnection() as HttpURLConnection
+                connection = (URL(safeUrl).openConnection() as? HttpURLConnection) ?: return@withContext null
                 connection.connectTimeout = 8000
                 connection.readTimeout = 8000
                 connection.connect()
@@ -30,6 +35,8 @@ object CoverFetcher {
             } catch (e: Exception) {
                 Log.e("CoverArt", "Failed to fetch cover", e)
                 null
+            } finally {
+                connection?.disconnect()
             }
         }
     }

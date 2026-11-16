@@ -5,13 +5,16 @@ import com.example.ncmconverter.api.model.LrcContent
 import com.example.ncmconverter.api.model.LyricResponse
 import com.example.ncmconverter.api.model.SearchResponse
 import com.google.gson.Gson
+import com.google.gson.stream.JsonReader
+import com.google.gson.stream.JsonToken
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.FormBody
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import java.io.StringReader
+import java.util.Locale
 import java.util.concurrent.TimeUnit
-import java.util.regex.Pattern
 
 /**
  * Direct HTTP transport client connecting directly to NetEase Cloud Music official endpoints.
@@ -76,8 +79,9 @@ class NeteaseDirectClient(
             .header("Referer", NeteaseEndpoints.HOST_DEFAULT)
             .build()
 
-        val response = client.newCall(request).execute()
-        val rawBody = response.body?.string()?.trim() ?: ""
+        val rawBody = client.newCall(request).execute().use { response ->
+            response.body?.string()?.trim() ?: ""
+        }
 
         if (rawBody.length >= 32 && rawBody.matches(Regex("^[0-9a-fA-F]+$"))) {
             NeteaseCrypto.decryptEapiResponse(rawBody) ?: rawBody
@@ -185,25 +189,73 @@ class NeteaseDirectClient(
     private fun convertYrcJsonToLrc(jsonLrc: String?): String? {
         if (jsonLrc == null || !jsonLrc.trim().startsWith("{")) return jsonLrc
         val sb = StringBuilder()
-        val linePattern = Pattern.compile("\\{\"t\":\\s*(\\d+)[^}]*?\"c\":\\s*\\[(.*?)\\]\\}")
-        val txPattern = Pattern.compile("\"tx\":\\s*\"(.*?)\"")
-        val m = linePattern.matcher(jsonLrc)
-        while (m.find()) {
-            val t = m.group(1)?.toLongOrNull() ?: continue
-            val chunks = m.group(2) ?: ""
-            val lineText = StringBuilder()
-            val txMatcher = txPattern.matcher(chunks)
-            while (txMatcher.find()) {
-                val tx = txMatcher.group(1)
-                    ?.replace("\\n", "")
-                    ?.replace("\\r", "")
-                    ?.replace("\\\"", "\"") ?: ""
-                lineText.append(tx)
+        for (rawLine in jsonLrc.lineSequence()) {
+            val trimmedLine = rawLine.trim()
+            if (!trimmedLine.startsWith("{")) continue
+            try {
+                val reader = JsonReader(StringReader(trimmedLine)).apply {
+                    isLenient = true
+                }
+                while (reader.peek() != JsonToken.END_DOCUMENT) {
+                    if (reader.peek() != JsonToken.BEGIN_OBJECT) {
+                        reader.skipValue()
+                        continue
+                    }
+                    reader.beginObject()
+                    var timestamp: Long? = null
+                    val lineText = StringBuilder()
+                    while (reader.hasNext()) {
+                        when (reader.nextName()) {
+                            "t" -> if (reader.peek() == JsonToken.NUMBER) {
+                                timestamp = reader.nextLong()
+                            } else {
+                                reader.skipValue()
+                            }
+                            "c" -> if (reader.peek() == JsonToken.BEGIN_ARRAY) {
+                                reader.beginArray()
+                                while (reader.hasNext()) {
+                                    if (reader.peek() == JsonToken.BEGIN_OBJECT) {
+                                        reader.beginObject()
+                                        while (reader.hasNext()) {
+                                            if (reader.nextName() == "tx" && reader.peek() == JsonToken.STRING) {
+                                                lineText.append(
+                                                    reader.nextString().replace("\n", "").replace("\r", "")
+                                                )
+                                            } else {
+                                                reader.skipValue()
+                                            }
+                                        }
+                                        reader.endObject()
+                                    } else {
+                                        reader.skipValue()
+                                    }
+                                }
+                                reader.endArray()
+                            } else {
+                                reader.skipValue()
+                            }
+                            else -> reader.skipValue()
+                        }
+                    }
+                    reader.endObject()
+                    val t = timestamp ?: continue
+                    val minutes = t / 60000
+                    val seconds = (t % 60000) / 1000
+                    val millis = t % 1000
+                    sb.append(
+                        String.format(
+                            Locale.US,
+                            "[%02d:%02d.%03d]%s\n",
+                            minutes,
+                            seconds,
+                            millis,
+                            lineText.toString().trim()
+                        )
+                    )
+                }
+            } catch (_: Exception) {
+                // Skip non-JSON or malformed lines
             }
-            val minutes = t / 60000
-            val seconds = (t % 60000) / 1000
-            val millis = t % 1000
-            sb.append(String.format("[%02d:%02d.%03d]%s\n", minutes, seconds, millis, lineText.toString().trim()))
         }
         val res = sb.toString().trim()
         return if (res.isNotEmpty()) res else jsonLrc

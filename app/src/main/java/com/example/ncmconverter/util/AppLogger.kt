@@ -92,26 +92,30 @@ object AppLogger {
         val pid = Process.myPid().toString()
         try {
             val process = Runtime.getRuntime().exec(arrayOf("logcat", "-d", "-v", "time"))
-            val reader = BufferedReader(InputStreamReader(process.inputStream))
-            var line: String?
-            while (reader.readLine().also { line = it } != null) {
-                val l = line ?: continue
-                if (l.contains(pid)) {
-                    // 判断日志级别 (logcat 格式通常为: 09-19 10:01:14.517 D/tag(pid): ...)
-                    val isPass = when {
-                        minLevel <= LEVEL_VERBOSE -> true
-                        minLevel <= LEVEL_DEBUG -> !l.contains(" V/")
-                        minLevel <= LEVEL_INFO -> !l.contains(" V/") && !l.contains(" D/")
-                        minLevel <= LEVEL_WARN -> l.contains(" W/") || l.contains(" E/") || l.contains(" F/")
-                        minLevel <= LEVEL_ERROR -> l.contains(" E/") || l.contains(" F/")
-                        else -> true
-                    }
-                    if (isPass) {
-                        logLines.add(l)
+            try {
+                BufferedReader(InputStreamReader(process.inputStream)).use { reader ->
+                    var line: String?
+                    while (reader.readLine().also { line = it } != null) {
+                        val l = line ?: continue
+                        if (l.contains(pid)) {
+                            // 判断日志级别 (logcat 格式通常为: 09-19 10:01:14.517 D/tag(pid): ...)
+                            val isPass = when {
+                                minLevel <= LEVEL_VERBOSE -> true
+                                minLevel <= LEVEL_DEBUG -> !l.contains(" V/")
+                                minLevel <= LEVEL_INFO -> !l.contains(" V/") && !l.contains(" D/")
+                                minLevel <= LEVEL_WARN -> l.contains(" W/") || l.contains(" E/") || l.contains(" F/")
+                                minLevel <= LEVEL_ERROR -> l.contains(" E/") || l.contains(" F/")
+                                else -> true
+                            }
+                            if (isPass) {
+                                logLines.add(l)
+                            }
+                        }
                     }
                 }
+            } finally {
+                process.destroy()
             }
-            reader.close()
         } catch (_: Exception) {
             // logcat 读取受限时回退到内存缓冲
         }

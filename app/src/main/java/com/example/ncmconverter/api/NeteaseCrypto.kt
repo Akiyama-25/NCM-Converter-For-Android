@@ -54,6 +54,8 @@ object NeteaseCrypto {
         val bytes = ByteArray(ciphertext.length / 2) { index ->
             ciphertext.substring(index * 2, index * 2 + 2).toInt(16).toByte()
         }
+        // NetEase EAPI wire protocol requires AES-128-ECB decryption with the fixed EAPI key.
+        // codeql[java/weak-cryptographic-algorithm]
         val cipher = Cipher.getInstance("AES/ECB/PKCS5Padding")
         cipher.init(Cipher.DECRYPT_MODE, SecretKeySpec(EAPI_KEY.toByteArray(Charsets.UTF_8), "AES"))
         String(cipher.doFinal(bytes), Charsets.UTF_8)
@@ -63,21 +65,28 @@ object NeteaseCrypto {
 
     private fun aesCbcBase64(value: String, key: String): String {
         val cipher = Cipher.getInstance("AES/CBC/PKCS5Padding")
+        // NetEase WeAPI protocol mandates this fixed 16-byte IV ("0102030405060708").
+        // codeql[java/static-initialization-vector]
+        val ivSpec = IvParameterSpec(IV.toByteArray(Charsets.UTF_8))
         cipher.init(
             Cipher.ENCRYPT_MODE,
             SecretKeySpec(key.toByteArray(Charsets.UTF_8), "AES"),
-            IvParameterSpec(IV.toByteArray(Charsets.UTF_8))
+            ivSpec
         )
         return Base64.getEncoder().encodeToString(cipher.doFinal(value.toByteArray(Charsets.UTF_8)))
     }
 
     private fun aesEcbHex(value: String, key: String): String {
+        // NetEase EAPI wire protocol requires AES-128-ECB encryption.
+        // codeql[java/weak-cryptographic-algorithm]
         val cipher = Cipher.getInstance("AES/ECB/PKCS5Padding")
         cipher.init(Cipher.ENCRYPT_MODE, SecretKeySpec(key.toByteArray(Charsets.UTF_8), "AES"))
         return cipher.doFinal(value.toByteArray(Charsets.UTF_8))
             .joinToString("") { byte -> "%02x".format(byte.toInt() and 0xff) }
     }
 
+    // NetEase EAPI signature construction mandates MD5 digesting.
+    // codeql[java/weak-cryptographic-algorithm]
     private fun md5(value: String): String = MessageDigest.getInstance("MD5")
         .digest(value.toByteArray(Charsets.UTF_8))
         .joinToString("") { byte -> "%02x".format(byte.toInt() and 0xff) }

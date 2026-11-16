@@ -43,7 +43,18 @@ internal object MarkdownParser {
     private val hrRegex = Regex("^(\\*{3,}|-{3,}|_{3,})\\s*$")
     private val bulletRegex = Regex("^(\\s*)([-*•·])\\s+(.*)$")
     private val orderedRegex = Regex("^(\\s*)(\\d+)\\.\\s+(.*)$")
-    private val tableSepRegex = Regex("^\\|?(\\s*:?-{2,}:?\\s*\\|)+\\s*:?-{2,}:?\\s*\\|?$")
+
+    private fun isTableSeparator(line: String): Boolean {
+        val trimmed = line.trim().removePrefix("|").removeSuffix("|")
+        if (!trimmed.contains("-")) return false
+        val cells = trimmed.split("|")
+        if (cells.size < 2) return false
+        return cells.all { cell ->
+            val c = cell.trim()
+            val core = c.removePrefix(":").removeSuffix(":")
+            core.length >= 2 && core.all { it == '-' }
+        }
+    }
 
     fun parse(markdown: String): List<MarkdownBlock> {
         val lines = markdown.replace("\r\n", "\n").lines()
@@ -102,7 +113,7 @@ internal object MarkdownParser {
             }
 
             // 5. Markdown Table
-            if (trimmed.contains("|") && i + 1 < lines.size && tableSepRegex.matches(lines[i + 1].trim())) {
+            if (trimmed.contains("|") && i + 1 < lines.size && isTableSeparator(lines[i + 1])) {
                 val headers = parseTableRow(trimmed)
                 i += 2 // skip header and separator row
                 val rows = mutableListOf<List<String>>()
@@ -147,7 +158,7 @@ internal object MarkdownParser {
                     curTrim.startsWith(">") ||
                     bulletRegex.matches(curRaw) ||
                     orderedRegex.matches(curRaw) ||
-                    (curTrim.contains("|") && i + 1 < lines.size && tableSepRegex.matches(lines[i + 1].trim()))
+                    (curTrim.contains("|") && i + 1 < lines.size && isTableSeparator(lines[i + 1]))
                 ) {
                     break
                 }

@@ -19,8 +19,7 @@ object SimilarityCalculator {
         "Ⅰ" to "I", "Ⅱ" to "II", "Ⅲ" to "III" // Ⅰ Ⅱ Ⅲ
     )
 
-    private val EXTRA_INFO_PATTERN = Regex("""\s*[\(（\[【].*?[\)）\]】]\s*$""")
-    private val COVER_PATTERN = Regex("""(?i)\s*(?:cover|翻唱|改编|remix)\b.*$""")
+    private val COVER_PATTERN = Regex("""(?i)\b(?:cover|翻唱|改编|remix)\b.*$""")
 
     fun normalize(text: String): String {
         var result = text.trim()
@@ -32,8 +31,24 @@ object SimilarityCalculator {
     }
 
     fun stripExtraInfo(text: String): String {
-        return text
-            .replace(EXTRA_INFO_PATTERN, "")
+        var result = text.trimEnd()
+        if (result.isNotEmpty()) {
+            val closeChar = result.last()
+            val openChar = when (closeChar) {
+                ')' -> '('
+                '）' -> '（'
+                ']' -> '['
+                '】' -> '【'
+                else -> null
+            }
+            if (openChar != null) {
+                val openIdx = result.lastIndexOf(openChar)
+                if (openIdx >= 0) {
+                    result = result.substring(0, openIdx).trimEnd()
+                }
+            }
+        }
+        return result
             .replace(COVER_PATTERN, "")
             .trim()
     }

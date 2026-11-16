@@ -73,14 +73,9 @@ jobs:
 
     - name: Set up Android SDK
       if: matrix.language == 'java-kotlin'
-      uses: android-actions/setup-android@v3
-
-    - name: Install Android SDK 36 components
-      if: matrix.language == 'java-kotlin'
-      shell: bash
-      run: |
-        yes | sdkmanager --licenses >/dev/null 2>&1 || true
-        sdkmanager "platforms;android-36" "build-tools;36.0.0" "platform-tools"
+      uses: android-actions/setup-android@v4
+      with:
+        packages: 'platform-tools platforms;android-36 build-tools;36.0.0'
 
     # Initializes the CodeQL tools for scanning.
     - name: Initialize CodeQL
@@ -107,6 +102,8 @@ jobs:
           --no-build-cache \
           --stacktrace \
           -Dorg.gradle.jvmargs="-Xmx3072m -Dfile.encoding=UTF-8" \
+          -Pkotlin.compiler.execution.strategy=in-process \
+          -Pkotlin.incremental=false \
           -Dkotlin.compiler.execution.strategy=in-process \
           -Dkotlin.incremental=false
 
